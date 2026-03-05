@@ -1,0 +1,181 @@
+@import "tailwindcss";
+
+/* ===== DESIGN TOKENS ===== */
+:root {
+  /* Colors */
+  --color-primary: #FF385C;
+  --color-primary-hover: #E0294A;
+  --color-primary-light: #FFF0F3;
+  --color-text-primary: #222222;
+  --color-text-secondary: #717171;
+  --color-text-tertiary: #B0B0B0;
+  --color-bg-primary: #FFFFFF;
+  --color-bg-secondary: #F7F7F7;
+  --color-bg-tertiary: #EBEBEB;
+  --color-border: #DDDDDD;
+  --color-border-focus: #222222;
+  --color-success: #008A05;
+  --color-success-light: #E6F9E7;
+  --color-warning: #E07912;
+  --color-warning-light: #FFF4E5;
+  --color-error: #C13515;
+  --color-error-light: #FFF0ED;
+  --color-yield: #00A67E;
+  --color-overlay: rgba(0, 0, 0, 0.55);
+
+  /* Gradients */
+  --gradient-hero: linear-gradient(170deg, #FF385C 0%, #BD1E59 100%);
+  --gradient-progress: linear-gradient(90deg, #FF385C 0%, #FF6B81 100%);
+  --gradient-card-hover: linear-gradient(180deg, rgba(0,0,0,0) 60%, rgba(0,0,0,0.04) 100%);
+
+  /* Spacing */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-10: 40px;
+  --space-12: 48px;
+  --space-16: 64px;
+  --space-20: 80px;
+
+  /* Border Radius */
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 24px;
+  --radius-full: 9999px;
+
+  /* Shadows */
+  --shadow-sm: 0 1px 2px rgba(0,0,0,0.08);
+  --shadow-md: 0 2px 8px rgba(0,0,0,0.10);
+  --shadow-lg: 0 4px 16px rgba(0,0,0,0.12);
+  --shadow-xl: 0 8px 28px rgba(0,0,0,0.15);
+  --shadow-focus: 0 0 0 2px #FF385C;
+
+  /* Motion */
+  --ease-default: cubic-bezier(0.25, 0.1, 0.25, 1);
+}
+
+/* ===== BASE STYLES ===== */
+* {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  font-family: "Nunito Sans", sans-serif;
+  background-color: var(--color-bg-primary);
+  color: var(--color-text-primary);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* ===== KEYFRAMES ===== */
+@keyframes shimmer {
+  0% { background-position: -1000px 0; }
+  100% { background-position: 1000px 0; }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slideInRight {
+  from { transform: translateX(100%); opacity: 0; }
+  to { transform: translateX(0); opacity: 1; }
+}
+
+@keyframes slideOutRight {
+  from { transform: translateX(0); opacity: 1; }
+  to { transform: translateX(100%); opacity: 0; }
+}
+
+@keyframes confettiFall {
+  0% { transform: translateY(-20px) rotate(0deg); opacity: 1; }
+  100% { transform: translateY(100vh) rotate(720deg); opacity: 0; }
+}
+
+/* ===== UTILITY CLASSES ===== */
+.shimmer {
+  background: linear-gradient(
+    90deg,
+    var(--color-bg-secondary) 25%,
+    var(--color-bg-tertiary) 50%,
+    var(--color-bg-secondary) 75%
+  );
+  background-size: 1000px 100%;
+  animation: shimmer 1.5s linear infinite;
+}
+
+.progress-bar-fill {
+  background: var(--gradient-progress);
+  border-radius: var(--radius-full);
+  transition: width 600ms ease-out;
+}
+
+.progress-bar-fill-update {
+  transition: width 400ms ease-out;
+}
+
+/* ===== FOCUS STYLES ===== */
+:focus-visible {
+  outline: none;
+  box-shadow: var(--shadow-focus);
+  border-radius: var(--radius-sm);
+}
+
+/* ===== REDUCED MOTION ===== */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+
+  .shimmer {
+    animation: none;
+    background: var(--color-bg-secondary);
+  }
+}
+
+/* ===== CUSTOM SCROLLBAR ===== */
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--color-bg-tertiary);
+  border-radius: var(--radius-full);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-text-tertiary);
+}
+
+/* Line clamp utilities */
+.line-clamp-2 {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.line-clamp-3 {
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
