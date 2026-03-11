@@ -182,7 +182,7 @@ export default function RaffleDetailPage({ params }: PageProps) {
               <RaffleStatusBadge status={raffle.status} />
               {raffle.status === "active" && (
                 <span className="text-xs font-semibold text-[#E07912]">
-                  {formatTimeLeft(raffle.expiresAt)} left
+                  {(() => { const t = formatTimeLeft(raffle.expiresAt); return t === "Expired" ? t : `${t} left`; })()}
                 </span>
               )}
             </div>

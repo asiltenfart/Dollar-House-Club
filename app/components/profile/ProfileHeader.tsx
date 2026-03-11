@@ -1,19 +1,17 @@
-import React from "react";
+"use client";
+
+import React, { useMemo } from "react";
 import Image from "next/image";
 import type { UserProfile } from "@/types";
 import { formatDate } from "@/lib/utils/format";
+import { getAvatar } from "@/lib/utils/avatars";
 
 interface ProfileHeaderProps {
   user: UserProfile;
 }
 
 export default function ProfileHeader({ user }: ProfileHeaderProps) {
-  const initials = user.displayName
-    .split(" ")
-    .map((n) => n[0])
-    .join("")
-    .slice(0, 2)
-    .toUpperCase();
+  const avatar = useMemo(() => getAvatar(user.address), [user.address]);
 
   return (
     <div
@@ -33,11 +31,9 @@ export default function ProfileHeader({ user }: ProfileHeaderProps) {
             />
           </div>
         ) : (
-          <div
-            className="w-20 h-20 rounded-full flex items-center justify-center text-white text-2xl font-bold"
-            style={{ background: "var(--gradient-hero)" }}
-          >
-            {initials}
+          <div className="w-20 h-20 rounded-full overflow-hidden border-2 border-[#EBEBEB]">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={avatar} alt={user.displayName} width={80} height={80} className="w-full h-full object-cover" />
           </div>
         )}
       </div>

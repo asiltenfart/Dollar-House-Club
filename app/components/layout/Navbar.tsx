@@ -143,17 +143,21 @@ function MobileNavLink({ href, children, onClick }: { href: string; children: Re
 
 function AvatarMenu({ displayName, address, onSignOut }: { displayName: string; address: string; onSignOut: () => void }) {
   const [open, setOpen] = useState(false);
-  const initials = displayName.split(" ").map((n) => n[0]).join("").slice(0, 2).toUpperCase();
+  const avatar = React.useMemo(() => {
+    // Lazy-load to avoid SSR issues (localStorage)
+    const { getAvatar } = require("@/lib/utils/avatars");
+    return getAvatar(address) as string;
+  }, [address]);
 
   return (
     <div className="relative">
       <button
         onClick={() => setOpen(!open)}
-        className="w-10 h-10 rounded-full flex items-center justify-center text-white text-sm font-bold transition-opacity hover:opacity-90"
-        style={{ background: "var(--gradient-hero)" }}
+        className="w-10 h-10 rounded-full overflow-hidden transition-opacity hover:opacity-90"
         aria-label="Account menu"
       >
-        {initials}
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src={avatar} alt={displayName} width={40} height={40} className="w-full h-full object-cover" />
       </button>
 
       {open && (

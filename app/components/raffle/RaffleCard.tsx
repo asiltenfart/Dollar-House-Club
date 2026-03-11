@@ -114,7 +114,7 @@ export default function RaffleCard({ raffle }: RaffleCardProps) {
           <div className="flex items-center justify-between text-xs text-[#717171]">
             <span>{raffle.depositorCount.toLocaleString()} depositors</span>
             {raffle.status === "active" ? (
-              <span>{formatTimeLeft(raffle.expiresAt)} left</span>
+              <span>{(() => { const t = formatTimeLeft(raffle.expiresAt); return t === "Expired" ? t : `${t} left`; })()}</span>
             ) : raffle.winner ? (
               <span className="text-[#008A05] font-semibold">Winner: {raffle.winner.displayName}</span>
             ) : (

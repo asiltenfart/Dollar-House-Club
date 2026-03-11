@@ -5,6 +5,7 @@ import Link from "next/link";
 import Image from "next/image";
 import type { Raffle } from "@/types";
 import { formatTimeLeft, calcPercent } from "@/lib/utils/format";
+import { getAvatar } from "@/lib/utils/avatars";
 
 interface HeroSectionProps {
   raffles: Raffle[];
@@ -164,11 +165,6 @@ function FeaturedCard({ raffle }: { raffle: Raffle }) {
           sizes="(max-width: 1024px) 100vw, 680px"
           priority
         />
-        {/* Green border highlight like Kickstarter */}
-        <div
-          className="absolute inset-0 pointer-events-none rounded-t-2xl"
-          style={{ boxShadow: "inset 0 0 0 3px #05CE78" }}
-        />
         {/* Overfunded badge on image */}
         {raffle.isOverfunded && (
           <div
@@ -185,11 +181,10 @@ function FeaturedCard({ raffle }: { raffle: Raffle }) {
         {/* Title + seller + bookmark */}
         <div className="flex items-start justify-between gap-3">
           <div className="flex items-center gap-3 min-w-0">
-            {/* Seller avatar placeholder */}
-            <div className="w-10 h-10 rounded-full bg-[#F0F0F0] border border-[#E0E0E0] flex items-center justify-center flex-shrink-0">
-              <span className="text-sm font-bold text-[#999]">
-                {raffle.seller.displayName.charAt(0)}
-              </span>
+            {/* Seller avatar */}
+            <div className="w-10 h-10 rounded-full overflow-hidden border border-[#E0E0E0] flex-shrink-0">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={getAvatar(raffle.seller.address)} alt={raffle.seller.displayName} width={40} height={40} className="w-full h-full object-cover" />
             </div>
             <div className="min-w-0">
               <h3 className="font-semibold text-[#1A1A1A] leading-snug line-clamp-2" style={{ fontSize: 17 }}>
@@ -209,7 +204,7 @@ function FeaturedCard({ raffle }: { raffle: Raffle }) {
 
         {/* Stats row */}
         <div className="flex items-center gap-3 mt-4 text-sm text-[#717171]">
-          <ClockLabel text={`${formatTimeLeft(raffle.expiresAt)} left`} />
+          <ClockLabel text={(() => { const t = formatTimeLeft(raffle.expiresAt); return t === "Expired" ? t : `${t} left`; })()}  />
           <span className="text-[#D0D0D0]">&bull;</span>
           <span>
             <strong className="text-[#1A1A1A]">{percent}%</strong> funded
@@ -251,11 +246,6 @@ function SmallCard({ raffle }: { raffle: Raffle }) {
           className="object-cover group-hover:scale-[1.03] transition-transform duration-300"
           sizes="260px"
         />
-        {/* Green border highlight */}
-        <div
-          className="absolute inset-0 pointer-events-none rounded-t-xl"
-          style={{ boxShadow: "inset 0 0 0 3px #05CE78" }}
-        />
       </div>
 
       {/* Body */}
@@ -263,10 +253,9 @@ function SmallCard({ raffle }: { raffle: Raffle }) {
         <div className="flex items-start justify-between gap-1">
           <div className="flex items-center gap-2 min-w-0">
             {/* Small avatar */}
-            <div className="w-6 h-6 rounded-full bg-[#F0F0F0] border border-[#E0E0E0] flex items-center justify-center flex-shrink-0">
-              <span className="text-[10px] font-bold text-[#999]">
-                {raffle.seller.displayName.charAt(0)}
-              </span>
+            <div className="w-6 h-6 rounded-full overflow-hidden border border-[#E0E0E0] flex-shrink-0">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={getAvatar(raffle.seller.address)} alt={raffle.seller.displayName} width={24} height={24} className="w-full h-full object-cover" />
             </div>
             <p className="text-xs font-semibold text-[#1A1A1A] line-clamp-2 leading-tight">
               {raffle.property.title}
@@ -279,7 +268,7 @@ function SmallCard({ raffle }: { raffle: Raffle }) {
 
         {/* Stats */}
         <div className="flex items-center gap-1.5 mt-2 text-xs text-[#717171] ml-8">
-          <ClockLabel text={`${formatTimeLeft(raffle.expiresAt)} left`} small />
+          <ClockLabel text={(() => { const t = formatTimeLeft(raffle.expiresAt); return t === "Expired" ? t : `${t} left`; })()} small />
           <span className="text-[#D0D0D0]">&bull;</span>
           <span>
             <strong className="text-[#1A1A1A]">{percent}%</strong> funded
