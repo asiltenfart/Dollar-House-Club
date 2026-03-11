@@ -3,6 +3,7 @@
 import React, { useState, use } from "react";
 import { notFound } from "next/navigation";
 import { getUserProfile, MOCK_RAFFLES } from "@/lib/api/mock";
+import { useAuth } from "@/lib/auth/AuthContext";
 import ProfileHeader from "@/components/profile/ProfileHeader";
 import TabBar, { type ProfileTab } from "@/components/profile/TabBar";
 import RaffleCard from "@/components/raffle/RaffleCard";
@@ -15,7 +16,14 @@ interface PageProps {
 
 export default function ProfilePage({ params }: PageProps) {
   const { address } = use(params);
-  const user = getUserProfile(address);
+  const { user: authUser } = useAuth();
+  const mockUser = getUserProfile(address);
+
+  // Use mock user if address matches mock data, otherwise fall back to
+  // the currently authenticated user (whose Flow address is in the URL).
+  const user =
+    mockUser ?? (authUser?.profile.address === address ? authUser.profile : null);
+
   const [activeTab, setActiveTab] = useState<ProfileTab>("deposits");
 
   if (!user) {
