@@ -30,7 +30,7 @@ export default function Footer() {
             <ul className="flex flex-col gap-3">
               <li><FooterLink href="/explore">Browse Raffles</FooterLink></li>
               <li><FooterLink href="/winners">Winners</FooterLink></li>
-              <li><FooterLink href="/explore">How It Works</FooterLink></li>
+              <li><FooterLink href="/#how-it-works">How It Works</FooterLink></li>
             </ul>
           </div>
 
@@ -38,9 +38,9 @@ export default function Footer() {
           <div>
             <h3 className="text-xs font-semibold text-[#222222] uppercase tracking-widest mb-4">Sellers</h3>
             <ul className="flex flex-col gap-3">
-              <li><FooterLink href="/">List Your Property</FooterLink></li>
-              <li><FooterLink href="/">Seller Guide</FooterLink></li>
-              <li><FooterLink href="/">Pricing</FooterLink></li>
+              <li><FooterLink href="/seller-guide">List Your Property</FooterLink></li>
+              <li><FooterLink href="/seller-guide">Seller Guide</FooterLink></li>
+              <li><FooterLink href="/pricing">Pricing</FooterLink></li>
             </ul>
           </div>
 
@@ -48,9 +48,9 @@ export default function Footer() {
           <div>
             <h3 className="text-xs font-semibold text-[#222222] uppercase tracking-widest mb-4">Legal</h3>
             <ul className="flex flex-col gap-3">
-              <li><FooterLink href="/">Terms of Service</FooterLink></li>
-              <li><FooterLink href="/">Privacy Policy</FooterLink></li>
-              <li><FooterLink href="/">Skill-Based Rules</FooterLink></li>
+              <li><FooterLink href="/terms">Terms of Service</FooterLink></li>
+              <li><FooterLink href="/privacy">Privacy Policy</FooterLink></li>
+              <li><FooterLink href="/rules">Skill-Based Rules</FooterLink></li>
             </ul>
           </div>
         </div>

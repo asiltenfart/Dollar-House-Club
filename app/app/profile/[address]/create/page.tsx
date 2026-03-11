@@ -396,9 +396,9 @@ export default function CreateRafflePage({ params }: PageProps) {
                 </div>
                 <p className="text-sm text-[#717171]">
                   I confirm I am the legal owner of this property, have the right to list it, and agree to the{" "}
-                  <a href="/" className="text-[#FF385C] underline">Seller Terms of Service</a>
+                  <a href="/terms" className="text-[#FF385C] underline">Seller Terms of Service</a>
                   {" "}and{" "}
-                  <a href="/" className="text-[#FF385C] underline">Platform Rules</a>.
+                  <a href="/rules" className="text-[#FF385C] underline">Platform Rules</a>.
                 </p>
               </label>
               {errors.terms && <p className="text-xs text-[#C13515] mt-2">{errors.terms}</p>}
