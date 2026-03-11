@@ -12,60 +12,57 @@ interface AuthModalProps {
   onClose: () => void;
 }
 
-type Step = "email" | "otp" | "success";
+type Step = "email" | "verifying" | "success" | "error";
 
 export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
   const { signIn } = useAuth();
   const { showToast } = useToast();
   const [step, setStep] = useState<Step>("email");
   const [email, setEmail] = useState("");
-  const [otp, setOtp] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [emailError, setEmailError] = useState("");
-  const [otpError, setOtpError] = useState("");
+  const [authError, setAuthError] = useState("");
 
   const handleClose = () => {
     setStep("email");
     setEmail("");
-    setOtp("");
     setEmailError("");
-    setOtpError("");
+    setAuthError("");
     setIsLoading(false);
     onClose();
   };
 
-  const handleSendOtp = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
       setEmailError("Please enter a valid email address.");
       return;
     }
     setEmailError("");
+    setAuthError("");
     setIsLoading(true);
-    // Simulate sending OTP
-    await new Promise((r) => setTimeout(r, 1000));
-    setIsLoading(false);
-    setStep("otp");
-  };
+    setStep("verifying");
 
-  const handleVerifyOtp = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!otp || otp.length < 4) {
-      setOtpError("Please enter the 6-digit code from your email.");
-      return;
+    try {
+      // Magic SDK handles the OTP UI in its own iframe.
+      // signIn() calls magic.auth.loginWithEmailOTP({ email })
+      await signIn(email);
+      setStep("success");
+      showToast("Welcome to Dollar House Club!", "success");
+      setTimeout(handleClose, 1500);
+    } catch (err: unknown) {
+      const message =
+        err instanceof Error ? err.message : "Sign-in failed. Please try again.";
+      setAuthError(message);
+      setStep("error");
+    } finally {
+      setIsLoading(false);
     }
-    setOtpError("");
-    setIsLoading(true);
-    // Mock verification: any code works
-    await signIn(email);
-    setIsLoading(false);
-    setStep("success");
-    showToast("Welcome to Dollar House Club!", "success");
-    setTimeout(handleClose, 1500);
   };
 
   return (
     <Modal isOpen={isOpen} onClose={handleClose} maxWidth="400px">
+      {/* Step 1: Email input */}
       {step === "email" && (
         <div>
           <div className="mb-6">
@@ -79,11 +76,11 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
             </div>
             <h2 className="text-2xl font-bold text-[#222222] mb-2">Sign in to participate</h2>
             <p className="text-sm text-[#717171]">
-              Enter your email and we&apos;ll send you a secure sign-in link. No password needed.
+              Enter your email and we&apos;ll send you a one-time code. No password needed.
             </p>
           </div>
 
-          <form onSubmit={handleSendOtp} className="flex flex-col gap-4">
+          <form onSubmit={handleSubmit} className="flex flex-col gap-4">
             <Input
               label="Email address"
               type="email"
@@ -95,66 +92,32 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
               autoComplete="email"
             />
             <Button type="submit" fullWidth isLoading={isLoading}>
-              {isLoading ? "" : "Send Sign-In Code"}
+              {isLoading ? "" : "Continue with Email"}
             </Button>
           </form>
 
           <p className="mt-4 text-xs text-[#717171] text-center">
             By continuing, you agree to our{" "}
-            <a href="/" className="underline hover:text-[#222222]">Terms of Service</a>
+            <a href="/terms" className="underline hover:text-[#222222]">Terms of Service</a>
             {" "}and{" "}
-            <a href="/" className="underline hover:text-[#222222]">Privacy Policy</a>.
+            <a href="/privacy" className="underline hover:text-[#222222]">Privacy Policy</a>.
           </p>
         </div>
       )}
 
-      {step === "otp" && (
-        <div>
-          <div className="mb-6">
-            <button
-              onClick={() => setStep("email")}
-              className="flex items-center gap-1 text-sm text-[#717171] hover:text-[#222222] transition-colors mb-4"
-            >
-              <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-                <path d="M10 3L5 8L10 13" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-              </svg>
-              Back
-            </button>
-            <h2 className="text-2xl font-bold text-[#222222] mb-2">Check your email</h2>
-            <p className="text-sm text-[#717171]">
-              We sent a 6-digit code to <strong className="text-[#222222]">{email}</strong>. Enter it below to sign in.
-            </p>
-          </div>
-
-          <form onSubmit={handleVerifyOtp} className="flex flex-col gap-4">
-            <Input
-              label="Sign-in code"
-              type="text"
-              placeholder="123456"
-              value={otp}
-              onChange={(e) => setOtp(e.target.value.replace(/\D/g, "").slice(0, 6))}
-              error={otpError}
-              autoFocus
-              inputMode="numeric"
-              autoComplete="one-time-code"
-            />
-            <Button type="submit" fullWidth isLoading={isLoading}>
-              {isLoading ? "" : "Verify Code"}
-            </Button>
-          </form>
-
-          <p className="mt-4 text-xs text-[#717171] text-center">
-            Didn&apos;t receive it?{" "}
-            <button
-              onClick={() => setStep("email")}
-              className="underline hover:text-[#222222] cursor-pointer"
-            >
-              Resend code
-            </button>
+      {/* Step 2: Magic is handling OTP verification */}
+      {step === "verifying" && (
+        <div className="flex flex-col items-center gap-4 py-8">
+          <div className="w-10 h-10 border-3 border-[#FF385C] border-t-transparent rounded-full animate-spin" />
+          <h2 className="text-lg font-bold text-[#222222]">Check your email</h2>
+          <p className="text-sm text-[#717171] text-center max-w-xs">
+            We sent a code to <strong className="text-[#222222]">{email}</strong>.
+            Enter it in the Magic prompt to sign in.
           </p>
         </div>
       )}
 
+      {/* Step 3: Success */}
       {step === "success" && (
         <div className="flex flex-col items-center gap-4 py-4">
           <div className="w-16 h-16 rounded-full bg-[#E6F9E7] flex items-center justify-center">
@@ -163,7 +126,31 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
             </svg>
           </div>
           <h2 className="text-2xl font-bold text-[#222222]">You&apos;re in!</h2>
-          <p className="text-sm text-[#717171] text-center">Signed in as {email}.</p>
+          <p className="text-sm text-[#717171] text-center">
+            Signed in as {email}. Your Flow wallet is ready.
+          </p>
+        </div>
+      )}
+
+      {/* Error state */}
+      {step === "error" && (
+        <div className="flex flex-col items-center gap-4 py-4">
+          <div className="w-16 h-16 rounded-full bg-[#FFF0F0] flex items-center justify-center">
+            <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
+              <path d="M9 9l10 10M19 9L9 19" stroke="#C13515" strokeWidth="2.5" strokeLinecap="round" />
+            </svg>
+          </div>
+          <h2 className="text-xl font-bold text-[#222222]">Sign-in failed</h2>
+          <p className="text-sm text-[#717171] text-center max-w-xs">{authError}</p>
+          <button
+            onClick={() => {
+              setStep("email");
+              setAuthError("");
+            }}
+            className="text-sm font-semibold text-[#FF385C] hover:underline cursor-pointer"
+          >
+            Try again
+          </button>
         </div>
       )}
     </Modal>
