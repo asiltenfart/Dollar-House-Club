@@ -1,62 +1,19 @@
 import React from "react";
 import Link from "next/link";
-import { getFeaturedRaffles, getPlatformStats } from "@/lib/api/mock";
+import { getActiveRaffles, getFeaturedRaffles, getPlatformStats } from "@/lib/api/mock";
 import RaffleCard from "@/components/raffle/RaffleCard";
+import HeroSection from "@/components/layout/HeroSection";
 import { formatUSD } from "@/lib/utils/format";
 
 export default function HomePage() {
+  const activeRaffles = getActiveRaffles();
   const featured = getFeaturedRaffles();
   const stats = getPlatformStats();
 
   return (
     <div>
       {/* HERO */}
-      <section
-        className="relative flex items-center justify-center text-center overflow-hidden"
-        style={{ height: "600px", background: "var(--gradient-hero)" }}
-      >
-        <div
-          className="absolute inset-0 opacity-10"
-          style={{
-            backgroundImage:
-              "radial-gradient(circle at 25% 25%, white 1px, transparent 1px), radial-gradient(circle at 75% 75%, white 1px, transparent 1px)",
-            backgroundSize: "40px 40px",
-          }}
-        />
-
-        <div className="relative px-4 max-w-3xl mx-auto">
-          <span className="inline-block mb-4 text-xs font-semibold text-white/80 uppercase tracking-widest bg-white/10 rounded-full px-4 py-1.5">
-            Yield-powered real estate
-          </span>
-          <h1
-            className="text-white font-extrabold mb-6 leading-none"
-            style={{ fontSize: "clamp(36px, 6vw, 64px)", letterSpacing: "-0.02em" }}
-          >
-            Win a home.<br />Keep your money.
-          </h1>
-          <p
-            className="text-white/80 mb-8 max-w-xl mx-auto"
-            style={{ fontSize: "18px", lineHeight: "1.5" }}
-          >
-            Deposit stablecoins into property raffles. The yield funds the prize.
-            Your principal is always withdrawable. No risk — just a chance to win.
-          </p>
-          <div className="flex items-center justify-center gap-3 flex-wrap">
-            <Link
-              href="/explore"
-              className="inline-flex items-center justify-center h-14 px-8 text-base font-semibold rounded-[8px] bg-white text-[#FF385C] hover:bg-white/90 shadow-lg transition-all duration-150"
-            >
-              Browse Raffles
-            </Link>
-            <Link
-              href="#how-it-works"
-              className="inline-flex items-center justify-center h-14 px-8 text-base font-semibold text-white border border-white/40 rounded-[8px] hover:bg-white/10 transition-colors duration-150"
-            >
-              How It Works
-            </Link>
-          </div>
-        </div>
-      </section>
+      <HeroSection raffles={activeRaffles} />
 
       {/* HOW IT WORKS */}
       <section id="how-it-works" className="bg-[#F7F7F7]" style={{ padding: "80px 24px" }}>
