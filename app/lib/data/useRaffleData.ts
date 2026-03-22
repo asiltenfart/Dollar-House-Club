@@ -179,7 +179,15 @@ export function useOnChainUserDeposit(
           const userAmount = parseFloat(depositResult.amount);
           const userYieldWeight = parseFloat(depositResult.yieldWeight ?? "0");
           const totalYieldWeight = raffleResult ? parseFloat(raffleResult.totalYieldWeight ?? "0") : 0;
-          const winChance = totalYieldWeight > 0 ? (userYieldWeight / totalYieldWeight) * 100 : 0;
+          const totalDeposited = raffleResult ? parseFloat(raffleResult.totalDeposited ?? "0") : 0;
+
+          // Use yield-weight-based win chance if available, else fall back to deposit proportion
+          let winChance = 0;
+          if (totalYieldWeight > 0 && userYieldWeight > 0) {
+            winChance = (userYieldWeight / totalYieldWeight) * 100;
+          } else if (totalDeposited > 0) {
+            winChance = (userAmount / totalDeposited) * 100;
+          }
 
           setDeposit({
             id: `dep-${raffleId}-${userAddress}`,
