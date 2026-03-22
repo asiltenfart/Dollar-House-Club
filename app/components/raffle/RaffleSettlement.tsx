@@ -1,7 +1,7 @@
 "use client";
 
-import React, { useState } from "react";
-import { useCommitRaffle, useRevealWinner, useIsRaffleExpired, useIsRaffleCommitted } from "@/lib/flow/hooks";
+import React, { useState, useEffect } from "react";
+import { useCommitRaffle, useRevealWinner, useIsRaffleExpired, useIsRaffleCommitted, useHarvestYield } from "@/lib/flow/hooks";
 import { useToast } from "@/components/ui/Toast";
 import Button from "@/components/ui/Button";
 
@@ -16,10 +16,20 @@ export default function RaffleSettlement({
   status,
   onSettled,
 }: RaffleSettlementProps) {
-  const { data: isExpired } = useIsRaffleExpired(raffleId);
-  const { data: isCommitted } = useIsRaffleCommitted(raffleId);
+  const { data: isExpired, refetch: refetchExpired } = useIsRaffleExpired(raffleId);
+  const { data: isCommitted, refetch: refetchCommitted } = useIsRaffleCommitted(raffleId);
+
+  // Poll expiry status every 10s until expired (emulator needs block advancement)
+  useEffect(() => {
+    if (status !== "active" || isExpired) return;
+    const interval = setInterval(() => {
+      refetchExpired();
+    }, 10000);
+    return () => clearInterval(interval);
+  }, [status, isExpired, refetchExpired]);
   const { commitRaffle } = useCommitRaffle();
   const { revealWinner } = useRevealWinner();
+  const { harvestYield } = useHarvestYield();
   const { showToast } = useToast();
   const [isCommitting, setIsCommitting] = useState(false);
   const [isRevealing, setIsRevealing] = useState(false);
@@ -30,8 +40,15 @@ export default function RaffleSettlement({
   const handleCommit = async () => {
     setIsCommitting(true);
     try {
+      // Harvest any pending yield before committing
+      try {
+        await harvestYield(raffleId);
+      } catch {
+        // Yield harvest is best-effort — OK if it fails
+      }
       await commitRaffle(raffleId);
       showToast("Randomness committed! Now reveal the winner.", "success");
+      refetchCommitted();
     } catch (e) {
       showToast("Failed to commit. Please try again.", "error");
       console.error("Commit error:", e);

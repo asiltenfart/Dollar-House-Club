@@ -7,6 +7,7 @@ import { ToastProvider } from "@/components/ui/Toast";
 import { AuthProvider } from "@/lib/auth/AuthContext";
 import FlowProvider from "@/lib/flow/FlowProvider";
 import { DataSourceProvider } from "@/lib/data/DataSourceContext";
+import EmulatorHeartbeat from "@/components/dev/EmulatorHeartbeat";
 
 const nunitoSans = Nunito_Sans({
   subsets: ["latin"],
@@ -46,6 +47,7 @@ export default function RootLayout({
               {children}
             </main>
             <Footer />
+            <EmulatorHeartbeat />
           </ToastProvider>
           </DataSourceProvider>
         </AuthProvider>
