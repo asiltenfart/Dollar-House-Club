@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import type { Raffle, Deposit } from "@/types";
 import { formatUSD, formatUSDDecimal, formatPercent, formatTimeLeft, calcPercent } from "@/lib/utils/format";
 import ProgressBar from "@/components/ui/ProgressBar";
@@ -44,7 +44,26 @@ export default function DepositCard({
   const [showConfetti, setShowConfetti] = useState(false);
   const depositCooldown = useRef(false);
 
-  const percent = calcPercent(raffle.totalYieldEarned, raffle.targetValueUSD);
+  // Real-time ticking yield: 500% APY on totalDeposited
+  const APY_RATE = 5.0;
+  const SECONDS_PER_YEAR = 31536000;
+  const yieldPerSecond = raffle.totalDeposited > 0 ? (raffle.totalDeposited * APY_RATE) / SECONDS_PER_YEAR : 0;
+
+  const [liveYield, setLiveYield] = useState(raffle.totalYieldEarned);
+
+  useEffect(() => {
+    setLiveYield(raffle.totalYieldEarned);
+  }, [raffle.totalYieldEarned]);
+
+  useEffect(() => {
+    if (yieldPerSecond <= 0 || raffle.status !== "active") return;
+    const interval = setInterval(() => {
+      setLiveYield((prev) => prev + yieldPerSecond);
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [yieldPerSecond, raffle.status]);
+
+  const percent = calcPercent(liveYield, raffle.targetValueUSD);
   const isActive = raffle.status === "active";
   const depositorCount = raffle.depositorCount;
 
@@ -131,7 +150,7 @@ export default function DepositCard({
           </svg>
           Your Listing
         </div>
-        <RaffleStats raffle={raffle} percent={percent} depositorCount={depositorCount} />
+        <RaffleStats raffle={raffle} percent={percent} depositorCount={depositorCount} liveYield={liveYield} />
       </div>
     );
   }
@@ -176,11 +195,11 @@ export default function DepositCard({
           </p>
           <ProgressBar percent={percent} height={8} showLabel />
           <p className="text-sm text-[#717171] mt-2">
-            {formatUSD(raffle.totalYieldEarned)} raised in yield ({percent}%)
+            {formatUSD(liveYield)} raised in yield ({percent}%)
           </p>
         </div>
 
-        <RaffleStats raffle={raffle} percent={percent} depositorCount={depositorCount} />
+        <RaffleStats raffle={raffle} percent={percent} depositorCount={depositorCount} liveYield={liveYield} />
 
         {isActive && (
           <>
@@ -288,7 +307,7 @@ export default function DepositCard({
   );
 }
 
-function RaffleStats({ raffle, percent, depositorCount }: { raffle: Raffle; percent: number; depositorCount: number }) {
+function RaffleStats({ raffle, percent, depositorCount, liveYield }: { raffle: Raffle; percent: number; depositorCount: number; liveYield: number }) {
   return (
     <div className="grid grid-cols-2 gap-4">
       <StatBox
@@ -302,7 +321,7 @@ function RaffleStats({ raffle, percent, depositorCount }: { raffle: Raffle; perc
       />
       <StatBox
         label="Total Yield"
-        value={formatUSD(raffle.totalYieldEarned)}
+        value={formatUSDDecimal(liveYield)}
         color="yield"
       />
       <StatBox

@@ -18,6 +18,8 @@ import {
   GET_ALL_DEPOSITS,
   IS_RAFFLE_EXPIRED,
   IS_RAFFLE_COMMITTED,
+  HARVEST_YIELD,
+  GET_PENDING_YIELD,
 } from "./cadence";
 
 // ── Lazy FCL accessor ──────────────────────────────────────────────────────
@@ -255,4 +257,23 @@ export function useSimulateYield() {
     });
   };
   return { simulateYield, isPending };
+}
+
+export function useHarvestYield() {
+  const { mutateAsync, isPending } = useClientMutate();
+  const harvestYield = async (raffleId: number) => {
+    return await mutateAsync({
+      cadence: HARVEST_YIELD,
+      args: (arg, t) => [arg(String(raffleId), t.UInt64)],
+    });
+  };
+  return { harvestYield, isPending };
+}
+
+export function usePendingYield(raffleId: number | null) {
+  return useClientQuery<string>({
+    cadence: GET_PENDING_YIELD,
+    args: (arg, t) => [arg(String(raffleId), t.UInt64)],
+    enabled: raffleId != null,
+  });
 }

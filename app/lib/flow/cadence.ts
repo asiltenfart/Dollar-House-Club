@@ -46,6 +46,7 @@ export const DEPOSIT_TO_RAFFLE = `
 import "FungibleToken"
 import "DummyPYUSD"
 import "DollarHouseRaffle"
+import "SimpleYieldSource"
 
 transaction(raffleId: UInt64, amount: UFix64) {
     prepare(signer: auth(BorrowValue) &Account) {
@@ -58,6 +59,7 @@ transaction(raffleId: UInt64, amount: UFix64) {
             depositor: signer.address,
             payment: <-payment
         )
+        SimpleYieldSource.notifyDeposit(poolId: raffleId, additionalAmount: amount)
     }
 }
 `;
@@ -66,9 +68,16 @@ export const WITHDRAW_FROM_RAFFLE = `
 import "FungibleToken"
 import "DummyPYUSD"
 import "DollarHouseRaffle"
+import "SimpleYieldSource"
 
 transaction(raffleId: UInt64) {
     prepare(signer: auth(BorrowValue) &Account) {
+        if let yieldVault <- SimpleYieldSource.harvestYield(poolId: raffleId) {
+            DollarHouseRaffle.simulateYield(raffleId: raffleId, yieldVault: <-yieldVault)
+        }
+        let depositInfo = DollarHouseRaffle.getDeposit(raffleId: raffleId, depositor: signer.address)
+            ?? panic("No deposit found")
+        let depositAmount = depositInfo.amount
         let returned <- DollarHouseRaffle.withdraw(
             raffleId: raffleId,
             depositor: signer.address
@@ -77,15 +86,20 @@ transaction(raffleId: UInt64) {
             from: DummyPYUSD.VaultStoragePath
         ) ?? panic("No DummyPYUSD vault found")
         vaultRef.deposit(from: <-returned)
+        SimpleYieldSource.notifyWithdrawal(poolId: raffleId, withdrawnAmount: depositAmount)
     }
 }
 `;
 
 export const COMMIT_RAFFLE = `
 import "DollarHouseRaffle"
+import "SimpleYieldSource"
 
 transaction(raffleId: UInt64) {
     prepare(signer: auth(BorrowValue) &Account) {
+        if let yieldVault <- SimpleYieldSource.harvestYield(poolId: raffleId) {
+            DollarHouseRaffle.simulateYield(raffleId: raffleId, yieldVault: <-yieldVault)
+        }
         DollarHouseRaffle.commitRaffle(raffleId: raffleId)
     }
 }
@@ -211,6 +225,27 @@ import "DollarHouseRaffle"
 
 access(all) fun main(raffleId: UInt64): {Address: DollarHouseRaffle.DepositInfo} {
     return DollarHouseRaffle.getAllDeposits(raffleId: raffleId)
+}
+`;
+
+export const HARVEST_YIELD = `
+import "DollarHouseRaffle"
+import "SimpleYieldSource"
+
+transaction(raffleId: UInt64) {
+    prepare(signer: auth(BorrowValue) &Account) {
+        if let yieldVault <- SimpleYieldSource.harvestYield(poolId: raffleId) {
+            DollarHouseRaffle.simulateYield(raffleId: raffleId, yieldVault: <-yieldVault)
+        }
+    }
+}
+`;
+
+export const GET_PENDING_YIELD = `
+import "SimpleYieldSource"
+
+access(all) fun main(raffleId: UInt64): UFix64 {
+    return SimpleYieldSource.getPendingYield(poolId: raffleId)
 }
 `;
 

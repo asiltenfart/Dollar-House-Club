@@ -1,16 +1,13 @@
 import "DollarHouseRaffle"
 import "SimpleYieldSource"
 
-/// STEP 1 of raffle settlement: Harvest final yield, then commit randomness request.
-/// Can be called by anyone after the raffle has expired.
+/// Harvests accrued yield from SimpleYieldSource and feeds it into the raffle.
+/// Anyone can call this to materialize pending yield on-chain.
 ///
 transaction(raffleId: UInt64) {
     prepare(signer: auth(BorrowValue) &Account) {
-        // Final yield harvest before settlement
         if let yieldVault <- SimpleYieldSource.harvestYield(poolId: raffleId) {
             DollarHouseRaffle.simulateYield(raffleId: raffleId, yieldVault: <-yieldVault)
         }
-
-        DollarHouseRaffle.commitRaffle(raffleId: raffleId)
     }
 }

@@ -1,8 +1,9 @@
 import "FungibleToken"
 import "DummyPYUSD"
 import "DollarHouseRaffle"
+import "SimpleYieldSource"
 
-/// Deposits PYUSD into a raffle.
+/// Deposits PYUSD into a raffle and notifies the yield source.
 ///
 transaction(raffleId: UInt64, amount: UFix64) {
     prepare(signer: auth(BorrowValue) &Account) {
@@ -19,5 +20,8 @@ transaction(raffleId: UInt64, amount: UFix64) {
             depositor: signer.address,
             payment: <-payment
         )
+
+        // Notify yield source of new principal
+        SimpleYieldSource.notifyDeposit(poolId: raffleId, additionalAmount: amount)
     }
 }

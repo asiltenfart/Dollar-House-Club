@@ -4,7 +4,7 @@ import { useMemo, useState, useEffect, useCallback } from "react";
 import { useDataSource } from "./DataSourceContext";
 import { chainRaffleToFrontend, type ChainRaffleData } from "./adapter";
 import { MOCK_RAFFLES, getRaffle as getMockRaffle, getMockDepositsForRaffle } from "@/lib/api/mock";
-import { GET_ALL_RAFFLES, GET_RAFFLE, GET_DEPOSIT } from "@/lib/flow/cadence";
+import { GET_ALL_RAFFLES, GET_RAFFLE, GET_DEPOSIT, GET_PENDING_YIELD } from "@/lib/flow/cadence";
 import type { Raffle, Deposit } from "@/types";
 
 // ── Fetch all raffles (mock or on-chain) ────────────────────────────────────
@@ -158,20 +158,34 @@ export function useOnChainUserDeposit(
 
     import("@onflow/fcl").then(async (fcl) => {
       try {
-        const result = await fcl.query({
-          cadence: GET_DEPOSIT,
-          args: (arg: typeof fcl.arg, t: typeof fcl.t) => [
-            arg(String(numericId), t.UInt64),
-            arg(userAddress, t.Address),
-          ],
-        });
+        // Fetch deposit and raffle in parallel
+        const [depositResult, raffleResult] = await Promise.all([
+          fcl.query({
+            cadence: GET_DEPOSIT,
+            args: (arg: typeof fcl.arg, t: typeof fcl.t) => [
+              arg(String(numericId), t.UInt64),
+              arg(userAddress, t.Address),
+            ],
+          }),
+          fcl.query({
+            cadence: GET_RAFFLE,
+            args: (arg: typeof fcl.arg, t: typeof fcl.t) => [
+              arg(String(numericId), t.UInt64),
+            ],
+          }),
+        ]);
 
-        if (!cancelled && result) {
+        if (!cancelled && depositResult) {
+          const userAmount = parseFloat(depositResult.amount);
+          const userYieldWeight = parseFloat(depositResult.yieldWeight ?? "0");
+          const totalYieldWeight = raffleResult ? parseFloat(raffleResult.totalYieldWeight ?? "0") : 0;
+          const winChance = totalYieldWeight > 0 ? (userYieldWeight / totalYieldWeight) * 100 : 0;
+
           setDeposit({
             id: `dep-${raffleId}-${userAddress}`,
             raffleId,
             user: {
-              address: result.depositor ?? userAddress,
+              address: depositResult.depositor ?? userAddress,
               displayName: userAddress,
               avatarUrl: null,
               email: "",
@@ -181,10 +195,10 @@ export function useOnChainUserDeposit(
               rafflesCompleted: 0,
               joinedAt: "",
             },
-            principalAmount: parseFloat(result.amount),
+            principalAmount: userAmount,
             yieldGenerated: 0,
-            winChance: 0,
-            depositedAt: new Date(parseFloat(result.depositedAt) * 1000).toISOString(),
+            winChance,
+            depositedAt: new Date(parseFloat(depositResult.depositedAt) * 1000).toISOString(),
             isWithdrawn: false,
           });
         } else if (!cancelled) {

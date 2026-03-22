@@ -11,6 +11,7 @@ export interface Raffle {
   targetValueUSD: number;
   totalDeposited: number;
   totalYieldEarned: number;
+  totalYieldWeight: number;
   depositorCount: number;
   createdAt: string;
   expiresAt: string;

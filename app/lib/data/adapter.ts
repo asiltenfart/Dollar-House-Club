@@ -20,6 +20,7 @@ export interface ChainRaffleData {
   expiresAt: string;
   totalDeposited: string;
   totalYield: string;
+  totalYieldWeight: string;
   depositorCount: string;
   status: { rawValue: string };
   winner: string | null;
@@ -92,6 +93,7 @@ export function chainRaffleToFrontend(data: ChainRaffleData): Raffle {
   const targetValue = parseFloat(data.targetValue);
   const totalDeposited = parseFloat(data.totalDeposited);
   const totalYield = parseFloat(data.totalYield);
+  const totalYieldWeight = parseFloat(data.totalYieldWeight ?? "0");
   const createdAtUnix = parseFloat(data.createdAt);
   const expiresAtUnix = parseFloat(data.expiresAt);
 
@@ -102,6 +104,7 @@ export function chainRaffleToFrontend(data: ChainRaffleData): Raffle {
     targetValueUSD: targetValue,
     totalDeposited,
     totalYieldEarned: totalYield,
+    totalYieldWeight,
     depositorCount: parseInt(data.depositorCount, 10),
     createdAt: new Date(createdAtUnix * 1000).toISOString(),
     expiresAt: new Date(expiresAtUnix * 1000).toISOString(),

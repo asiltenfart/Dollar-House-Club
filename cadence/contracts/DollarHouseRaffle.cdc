@@ -22,7 +22,6 @@ access(all) contract DollarHouseRaffle {
     access(all) event WithdrawalMade(raffleId: UInt64, depositor: Address, amount: UFix64)
     access(all) event RaffleCommitted(raffleId: UInt64, commitBlock: UInt64)
     access(all) event WinnerRevealed(raffleId: UInt64, winner: Address, isFunded: Bool, prizeAmount: UFix64)
-
     // ── State ────────────────────────────────────────────────────────────────
 
     /// Auto-incrementing raffle ID
@@ -65,6 +64,8 @@ access(all) contract DollarHouseRaffle {
         access(all) let expiresAt: UFix64
         access(all) var totalDeposited: UFix64
         access(all) var totalYield: UFix64
+        /// Sum of all depositors' yield weights (amount * secondsRemaining at deposit time)
+        access(all) var totalYieldWeight: UFix64
         access(all) var depositorCount: UInt64
         access(all) var status: RaffleStatus
         access(all) var winner: Address?
@@ -87,6 +88,7 @@ access(all) contract DollarHouseRaffle {
             self.expiresAt = expiresAt
             self.totalDeposited = 0.0
             self.totalYield = 0.0
+            self.totalYieldWeight = 0.0
             self.depositorCount = 0
             self.status = RaffleStatus.active
             self.winner = nil
@@ -96,6 +98,18 @@ access(all) contract DollarHouseRaffle {
             self.totalDeposited = self.totalDeposited + amount
             if isNew {
                 self.depositorCount = self.depositorCount + 1
+            }
+        }
+
+        access(contract) fun addYieldWeight(_ weight: UFix64) {
+            self.totalYieldWeight = self.totalYieldWeight + weight
+        }
+
+        access(contract) fun removeYieldWeight(_ weight: UFix64) {
+            if weight >= self.totalYieldWeight {
+                self.totalYieldWeight = 0.0
+            } else {
+                self.totalYieldWeight = self.totalYieldWeight - weight
             }
         }
 
@@ -121,15 +135,23 @@ access(all) contract DollarHouseRaffle {
         access(all) let depositor: Address
         access(all) var amount: UFix64
         access(all) let depositedAt: UFix64
+        /// Yield weight = amount * secondsRemaining at deposit time.
+        /// Represents estimated yield contribution to the pool.
+        access(all) var yieldWeight: UFix64
 
-        init(depositor: Address, amount: UFix64, depositedAt: UFix64) {
+        init(depositor: Address, amount: UFix64, depositedAt: UFix64, yieldWeight: UFix64) {
             self.depositor = depositor
             self.amount = amount
             self.depositedAt = depositedAt
+            self.yieldWeight = yieldWeight
         }
 
         access(contract) fun addAmount(_ a: UFix64) {
             self.amount = self.amount + a
+        }
+
+        access(contract) fun addYieldWeight(_ w: UFix64) {
+            self.yieldWeight = self.yieldWeight + w
         }
     }
 
@@ -185,8 +207,13 @@ access(all) contract DollarHouseRaffle {
         assert(getCurrentBlock().timestamp < raffle.expiresAt, message: "Raffle has expired")
         assert(depositor != raffle.seller, message: "Seller cannot deposit into own raffle")
 
+        let now = getCurrentBlock().timestamp
         let amount = payment.balance
         self.vault.deposit(from: <-payment)
+
+        // Calculate yield weight: amount * seconds remaining until expiry
+        let secondsRemaining = raffle.expiresAt > now ? raffle.expiresAt - now : 0.0
+        let yieldWeight = amount * secondsRemaining
 
         // Update or create deposit record
         let raffleDeposits = self.deposits[raffleId]!
@@ -195,7 +222,7 @@ access(all) contract DollarHouseRaffle {
         if let existing = raffleDeposits[depositor] {
             let updated = existing
             updated.addAmount(amount)
-            let mutableDeposits = raffleDeposits
+            updated.addYieldWeight(yieldWeight)
             let newDeposits = self.deposits.remove(key: raffleId)!
             var d = newDeposits
             d[depositor] = updated
@@ -205,7 +232,8 @@ access(all) contract DollarHouseRaffle {
             d[depositor] = DepositInfo(
                 depositor: depositor,
                 amount: amount,
-                depositedAt: getCurrentBlock().timestamp
+                depositedAt: now,
+                yieldWeight: yieldWeight
             )
             self.deposits[raffleId] = d
         }
@@ -213,6 +241,7 @@ access(all) contract DollarHouseRaffle {
         // Update raffle totals
         let r = self.raffles.remove(key: raffleId)!
         r.addDeposit(amount: amount, isNew: isNew)
+        r.addYieldWeight(yieldWeight)
         self.raffles[raffleId] = r
 
         emit DepositMade(raffleId: raffleId, depositor: depositor, amount: amount)
@@ -226,6 +255,7 @@ access(all) contract DollarHouseRaffle {
         let raffleDeposits = self.deposits[raffleId]!
         let depositInfo = raffleDeposits[depositor] ?? panic("No deposit found for this address")
         let amount = depositInfo.amount
+        let yieldWeight = depositInfo.yieldWeight
 
         // Remove deposit
         var d = self.deposits.remove(key: raffleId)!
@@ -235,6 +265,7 @@ access(all) contract DollarHouseRaffle {
         // Update raffle totals
         let r = self.raffles.remove(key: raffleId)!
         r.removeDeposit(amount: amount)
+        r.removeYieldWeight(yieldWeight)
         self.raffles[raffleId] = r
 
         emit WithdrawalMade(raffleId: raffleId, depositor: depositor, amount: amount)
@@ -259,6 +290,7 @@ access(all) contract DollarHouseRaffle {
     /// STEP 1 of settlement: Commit randomness request.
     /// Can be called by anyone after the raffle has expired.
     /// This is the first of two transactions required for secure onchain randomness.
+    /// Auto-harvests all remaining yield before settlement.
     access(all) fun commitRaffle(raffleId: UInt64) {
         let raffle = self.raffles[raffleId] ?? panic("Raffle not found")
         assert(raffle.status == RaffleStatus.active, message: "Raffle is not active")
@@ -303,15 +335,14 @@ access(all) contract DollarHouseRaffle {
         assert(depositorAddresses.length > 0, message: "No depositors")
 
         // Use RandomConsumer to get a random index
-        // We weight by deposit amount for fairness (proportional to deposit)
-        let totalDeposited = raffle.totalDeposited
+        // Weight by estimated yield contribution (deposit * time remaining at deposit)
         let randomValue = self.consumer.fulfillRandomRequest(<-request)
 
-        // Select winner proportionally to deposit amount
+        // Select winner proportionally to yield contribution
         let winnerAddress = self._selectWeightedWinner(
             deposits: raffleDeposits,
             depositorAddresses: depositorAddresses,
-            totalDeposited: totalDeposited,
+            totalYieldWeight: raffle.totalYieldWeight,
             randomValue: randomValue
         )
 
@@ -424,23 +455,26 @@ access(all) contract DollarHouseRaffle {
 
     // ── Internal ─────────────────────────────────────────────────────────────
 
-    /// Weighted random selection: probability proportional to deposit amount.
+    /// Weighted random selection: probability proportional to estimated yield contribution.
+    /// Yield weight = deposit amount * seconds remaining at deposit time.
+    /// Early depositors with more time to generate yield have higher win probability.
     access(self) fun _selectWeightedWinner(
         deposits: {Address: DepositInfo},
         depositorAddresses: [Address],
-        totalDeposited: UFix64,
+        totalYieldWeight: UFix64,
         randomValue: UInt64
     ): Address {
-        // Convert random value to a point in [0, totalDeposited)
-        // Use modulo to map the random value into the total deposit range
-        let totalCents = UInt64(totalDeposited * 100.0) // Convert to cents to avoid floating point
-        let targetCents = randomValue % totalCents
+        // Convert yield weights to integer units to avoid floating point issues
+        // Use whole units (truncate to integers) since yield weights are large numbers
+        let totalUnits = UInt64(totalYieldWeight)
+        assert(totalUnits > 0, message: "Total yield weight must be positive")
+        let targetUnits = randomValue % totalUnits
 
-        var cumulativeCents: UInt64 = 0
+        var cumulativeUnits: UInt64 = 0
         for addr in depositorAddresses {
             let dep = deposits[addr]!
-            cumulativeCents = cumulativeCents + UInt64(dep.amount * 100.0)
-            if targetCents < cumulativeCents {
+            cumulativeUnits = cumulativeUnits + UInt64(dep.yieldWeight)
+            if targetUnits < cumulativeUnits {
                 return addr
             }
         }
