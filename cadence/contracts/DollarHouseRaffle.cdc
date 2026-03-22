@@ -478,7 +478,7 @@ access(all) contract DollarHouseRaffle {
     }
 
     /// Claim deposited principal after raffle completion. Requires authorized account.
-    /// Destroys the deposit record — only callable once per depositor.
+    /// Preserves the deposit record (marked as withdrawn) so historical stats remain accurate.
     access(all) fun claimPrincipal(raffleId: UInt64, signer: auth(BorrowValue) &Account): @DummyPYUSD.Vault {
         let depositor = signer.address
 
@@ -493,11 +493,12 @@ access(all) contract DollarHouseRaffle {
             ?? panic("No deposit found for this address")
         assert(depView.amount > 0.0, message: "No principal to claim (already withdrawn or claimed)")
 
-        // Effects: move resource, remove deposit, return principal
+        // Effects: move resource, mark as withdrawn (preserves record), return principal
         let raffle <- self.raffles.remove(key: raffleId)!
         let dep <- raffle.removeDepositResource(depositor)
         let amount = dep.amount
-        destroy dep
+        dep.markWithdrawn()
+        raffle.insertDeposit(<- dep)
 
         self.raffles[raffleId] <-! raffle
 
