@@ -2,12 +2,13 @@ import "DummyPYUSD"
 import "DollarHouseRaffle"
 
 /// Claim principal after a raffle is completed.
+/// Depositor identity is derived from the signer — prevents impersonation.
 ///
 transaction(raffleId: UInt64) {
     prepare(signer: auth(BorrowValue) &Account) {
         let returned <- DollarHouseRaffle.claimPrincipal(
             raffleId: raffleId,
-            depositor: signer.address
+            signer: signer
         )
 
         let vaultRef = signer.storage.borrow<&DummyPYUSD.Vault>(

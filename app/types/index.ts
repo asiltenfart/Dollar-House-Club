@@ -20,6 +20,7 @@ export interface Raffle {
   winner: UserProfile | null;
   isOverfunded: boolean;
   transferConfirmed: boolean;
+  prizeClaimed: boolean;
 }
 
 export interface PropertyListing {

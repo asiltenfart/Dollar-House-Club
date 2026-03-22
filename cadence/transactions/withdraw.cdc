@@ -4,6 +4,7 @@ import "DollarHouseRaffle"
 import "SimpleYieldSource"
 
 /// Withdraws principal from a raffle, harvests pending yield, and notifies yield source.
+/// Depositor identity is derived from the signer — prevents impersonation.
 ///
 transaction(raffleId: UInt64) {
     prepare(signer: auth(BorrowValue) &Account) {
@@ -12,16 +13,9 @@ transaction(raffleId: UInt64) {
             DollarHouseRaffle.simulateYield(raffleId: raffleId, yieldVault: <-yieldVault)
         }
 
-        // Get the deposit amount before withdrawing (for notifying yield source)
-        let depositInfo = DollarHouseRaffle.getDeposit(raffleId: raffleId, depositor: signer.address)
-            ?? panic("No deposit found")
-        let depositAmount = depositInfo.amount
-
-        // Withdraw from raffle
-        let returned <- DollarHouseRaffle.withdraw(
-            raffleId: raffleId,
-            depositor: signer.address
-        )
+        // Withdraw from raffle — signer proves identity
+        let returned <- DollarHouseRaffle.withdraw(raffleId: raffleId, signer: signer)
+        let withdrawnAmount = returned.balance
 
         // Deposit back into signer's vault
         let vaultRef = signer.storage.borrow<&DummyPYUSD.Vault>(
@@ -31,6 +25,6 @@ transaction(raffleId: UInt64) {
         vaultRef.deposit(from: <-returned)
 
         // Notify yield source of withdrawn principal
-        SimpleYieldSource.notifyWithdrawal(poolId: raffleId, withdrawnAmount: depositAmount)
+        SimpleYieldSource.notifyWithdrawal(poolId: raffleId, withdrawnAmount: withdrawnAmount)
     }
 }

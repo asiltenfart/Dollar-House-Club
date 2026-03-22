@@ -2,12 +2,13 @@ import "DummyPYUSD"
 import "DollarHouseRaffle"
 
 /// Winner claims the yield prize after raffle completion.
+/// Winner identity is derived from the signer — prevents impersonation.
 ///
 transaction(raffleId: UInt64) {
     prepare(signer: auth(BorrowValue) &Account) {
         let prize <- DollarHouseRaffle.claimPrize(
             raffleId: raffleId,
-            winner: signer.address
+            signer: signer
         )
 
         let vaultRef = signer.storage.borrow<&DummyPYUSD.Vault>(

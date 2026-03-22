@@ -33,7 +33,7 @@ import "DollarHouseRaffle"
 transaction(title: String, description: String, targetValue: UFix64) {
     prepare(signer: auth(BorrowValue) &Account) {
         DollarHouseRaffle.createRaffle(
-            seller: signer.address,
+            signer: signer,
             title: title,
             description: description,
             targetValue: targetValue
@@ -56,7 +56,7 @@ transaction(raffleId: UInt64, amount: UFix64) {
         let payment <- vaultRef.withdraw(amount: amount) as! @DummyPYUSD.Vault
         DollarHouseRaffle.deposit(
             raffleId: raffleId,
-            depositor: signer.address,
+            signer: signer,
             payment: <-payment
         )
         SimpleYieldSource.notifyDeposit(poolId: raffleId, additionalAmount: amount)
@@ -75,18 +75,13 @@ transaction(raffleId: UInt64) {
         if let yieldVault <- SimpleYieldSource.harvestYield(poolId: raffleId) {
             DollarHouseRaffle.simulateYield(raffleId: raffleId, yieldVault: <-yieldVault)
         }
-        let depositInfo = DollarHouseRaffle.getDeposit(raffleId: raffleId, depositor: signer.address)
-            ?? panic("No deposit found")
-        let depositAmount = depositInfo.amount
-        let returned <- DollarHouseRaffle.withdraw(
-            raffleId: raffleId,
-            depositor: signer.address
-        )
+        let returned <- DollarHouseRaffle.withdraw(raffleId: raffleId, signer: signer)
+        let withdrawnAmount = returned.balance
         let vaultRef = signer.storage.borrow<&DummyPYUSD.Vault>(
             from: DummyPYUSD.VaultStoragePath
         ) ?? panic("No DummyPYUSD vault found")
         vaultRef.deposit(from: <-returned)
-        SimpleYieldSource.notifyWithdrawal(poolId: raffleId, withdrawnAmount: depositAmount)
+        SimpleYieldSource.notifyWithdrawal(poolId: raffleId, withdrawnAmount: withdrawnAmount)
     }
 }
 `;
@@ -135,7 +130,7 @@ transaction(raffleId: UInt64) {
     prepare(signer: auth(BorrowValue) &Account) {
         let returned <- DollarHouseRaffle.claimPrincipal(
             raffleId: raffleId,
-            depositor: signer.address
+            signer: signer
         )
         let vaultRef = signer.storage.borrow<&DummyPYUSD.Vault>(
             from: DummyPYUSD.VaultStoragePath
@@ -153,7 +148,7 @@ transaction(raffleId: UInt64) {
     prepare(signer: auth(BorrowValue) &Account) {
         let prize <- DollarHouseRaffle.claimPrize(
             raffleId: raffleId,
-            winner: signer.address
+            signer: signer
         )
         let vaultRef = signer.storage.borrow<&DummyPYUSD.Vault>(
             from: DummyPYUSD.VaultStoragePath

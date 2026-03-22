@@ -101,6 +101,7 @@ export const MOCK_RAFFLES: Raffle[] = [
     winner: null,
     isOverfunded: false,
     transferConfirmed: false,
+    prizeClaimed: false,
   },
   {
     id: "raffle-002",
@@ -138,6 +139,7 @@ export const MOCK_RAFFLES: Raffle[] = [
     winner: null,
     isOverfunded: false,
     transferConfirmed: false,
+    prizeClaimed: false,
   },
   {
     id: "raffle-003",
@@ -175,6 +177,7 @@ export const MOCK_RAFFLES: Raffle[] = [
     winner: null,
     isOverfunded: true,
     transferConfirmed: false,
+    prizeClaimed: false,
   },
   {
     id: "raffle-004",
@@ -212,6 +215,7 @@ export const MOCK_RAFFLES: Raffle[] = [
     winner: null,
     isOverfunded: false,
     transferConfirmed: false,
+    prizeClaimed: false,
   },
   {
     id: "raffle-005",
@@ -249,6 +253,7 @@ export const MOCK_RAFFLES: Raffle[] = [
     winner: MOCK_USERS[2],
     isOverfunded: false,
     transferConfirmed: true,
+    prizeClaimed: false,
   },
   {
     id: "raffle-006",
@@ -286,6 +291,7 @@ export const MOCK_RAFFLES: Raffle[] = [
     winner: MOCK_USERS[1],
     isOverfunded: false,
     transferConfirmed: false,
+    prizeClaimed: false,
   },
 ];
 

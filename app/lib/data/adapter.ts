@@ -24,6 +24,7 @@ export interface ChainRaffleData {
   depositorCount: string;
   status: { rawValue: string };
   winner: string | null;
+  prizeClaimed: boolean;
 }
 
 // ── Conversion ──────────────────────────────────────────────────────────────
@@ -113,5 +114,6 @@ export function chainRaffleToFrontend(data: ChainRaffleData): Raffle {
     winner: data.winner ? makeWinnerProfile(data.winner) : null,
     isOverfunded: totalYield > targetValue,
     transferConfirmed: false,
+    prizeClaimed: data.prizeClaimed ?? false,
   };
 }
