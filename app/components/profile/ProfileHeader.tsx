@@ -3,7 +3,7 @@
 import React, { useMemo } from "react";
 import Image from "next/image";
 import type { UserProfile } from "@/types";
-import { formatDate } from "@/lib/utils/format";
+import { formatDate, formatYieldTicker } from "@/lib/utils/format";
 import { getAvatar } from "@/lib/utils/avatars";
 
 interface ProfileStats {
@@ -66,21 +66,23 @@ export default function ProfileHeader({ user, stats }: ProfileHeaderProps) {
       </p>
 
       {/* Stats row */}
-      <div className="flex items-center gap-8">
-        <StatItem value={stats?.rafflesEntered ?? user.rafflesEntered} label="Raffles Entered" />
+      <div className="flex items-center gap-8 flex-wrap justify-center">
+        <StatItem value={String(stats?.rafflesEntered ?? user.rafflesEntered)} label="Raffles Entered" />
         <div className="w-px h-8 bg-[#EBEBEB]" />
-        <StatItem value={stats?.rafflesWon ?? user.rafflesWon} label="Raffles Won" />
+        <StatItem value={String(stats?.rafflesWon ?? user.rafflesWon)} label="Raffles Won" />
         <div className="w-px h-8 bg-[#EBEBEB]" />
-        <StatItem value={stats?.rafflesListed ?? user.rafflesListed} label="Properties Listed" />
+        <StatItem value={stats?.yieldWon ? formatYieldTicker(stats.yieldWon) : "$0.00"} label="Yield Won" color="#008A05" />
+        <div className="w-px h-8 bg-[#EBEBEB]" />
+        <StatItem value={String(stats?.rafflesListed ?? user.rafflesListed)} label="Properties Listed" />
       </div>
     </div>
   );
 }
 
-function StatItem({ value, label }: { value: number; label: string }) {
+function StatItem({ value, label, color }: { value: string; label: string; color?: string }) {
   return (
     <div className="flex flex-col items-center gap-1">
-      <span className="text-2xl font-bold text-[#222222]">{value}</span>
+      <span className="text-2xl font-bold" style={{ color: color ?? "#222222" }}>{value}</span>
       <span className="text-xs text-[#717171]">{label}</span>
     </div>
   );
