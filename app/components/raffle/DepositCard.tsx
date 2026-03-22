@@ -34,7 +34,7 @@ export default function DepositCard({
   const { withdrawFromRaffle } = useWithdrawFromRaffle();
   const { claimPrincipal } = useClaimPrincipal();
   const { claimPrize } = useClaimPrize();
-  const { data: pyusdBalance } = usePYUSDBalance(user?.profile.address ?? null);
+  const { data: pyusdBalance, refetch: refetchBalance } = usePYUSDBalance(user?.profile.address ?? null);
   const [amount, setAmount] = useState("");
   const [amountError, setAmountError] = useState("");
   const [isDepositing, setIsDepositing] = useState(false);
@@ -153,6 +153,7 @@ export default function DepositCard({
       setAmount("");
       setShowConfetti(true);
       setTimeout(() => setShowConfetti(false), 2500);
+      refetchBalance();
       onDepositSuccess?.(parseFloat(amount));
       showToast(`Deposited ${formatUSDDecimal(parseFloat(amount))} successfully!`, "success");
     } catch (e) {
@@ -173,6 +174,7 @@ export default function DepositCard({
       const raffleIdNum = parseInt(raffle.id.replace("raffle-", ""), 10) || parseInt(raffle.id, 10);
       await withdrawFromRaffle(raffleIdNum);
       setIsWithdrawing(false);
+      refetchBalance();
       onWithdrawSuccess?.();
       showToast("Principal withdrawn successfully.", "success");
     } catch (e) {
@@ -307,11 +309,11 @@ export default function DepositCard({
               <p className="text-xs text-[#717171] mt-1">Raffle completed</p>
             </div>
 
-            {/* Claim buttons — only show for users with a deposit */}
-            {isAuthenticated && userDeposit && !userDeposit.isWithdrawn && (
+            {/* Claim buttons — show for authenticated users with a deposit */}
+            {isAuthenticated && userDeposit && (
               <div className="space-y-3">
-                {/* Claim Principal — available to all depositors */}
-                {!principalClaimed && (
+                {/* Claim Principal — available to depositors who haven't withdrawn */}
+                {!principalClaimed && !userDeposit.isWithdrawn && userDeposit.principalAmount > 0 && (
                   <Button
                     variant="outline"
                     fullWidth
@@ -319,13 +321,13 @@ export default function DepositCard({
                     onClick={async () => {
                       setIsClaimingPrincipal(true);
                       try {
-                        const raffleIdNum = parseInt(raffle.id.replace("raffle-", ""), 10) || parseInt(raffle.id, 10);
                         await claimPrincipal(raffleIdNum);
                         setPrincipalClaimed(true);
                         showToast("Principal claimed successfully!", "success");
+                        refetchBalance();
                         onWithdrawSuccess?.();
                       } catch (e) {
-                        showToast("Failed to claim principal. Please try again.", "error");
+                        showToast("Failed to claim principal. It may have already been claimed.", "error");
                         console.error("Claim principal error:", e);
                       }
                       setIsClaimingPrincipal(false);
@@ -336,37 +338,50 @@ export default function DepositCard({
                 )}
 
                 {/* Claim Prize — only for the winner */}
-                {user?.profile.address === raffle.winner.address && !prizeClaimed && (
+                {user?.profile.address === raffle.winner?.address && !prizeClaimed && (
                   <Button
                     fullWidth
                     isLoading={isClaimingPrize}
                     onClick={async () => {
                       setIsClaimingPrize(true);
                       try {
-                        const raffleIdNum = parseInt(raffle.id.replace("raffle-", ""), 10) || parseInt(raffle.id, 10);
                         await claimPrize(raffleIdNum);
                         setPrizeClaimed(true);
-                        showToast(`Prize of ${formatUSD(raffle.totalYieldEarned)} claimed!`, "success");
+                        showToast(`Prize of ${formatYieldTicker(raffle.totalYieldEarned)} claimed!`, "success");
+                        refetchBalance();
                         onDepositSuccess?.(0);
                       } catch (e) {
-                        showToast("Failed to claim prize. Please try again.", "error");
+                        showToast("Failed to claim prize. It may have already been claimed.", "error");
                         console.error("Claim prize error:", e);
                       }
                       setIsClaimingPrize(false);
                     }}
                   >
-                    {isClaimingPrize ? "" : `Claim Prize (${formatUSD(raffle.totalYieldEarned)})`}
+                    {isClaimingPrize ? "" : `Claim Yield Prize (${formatYieldTicker(raffle.totalYieldEarned)})`}
                   </Button>
                 )}
 
                 {/* Already claimed states */}
                 {principalClaimed && (
-                  <p className="text-xs text-[#008A05] text-center font-medium">Principal claimed</p>
+                  <p className="text-xs text-[#008A05] text-center font-medium">✓ Principal claimed</p>
                 )}
-                {user?.profile.address === raffle.winner.address && prizeClaimed && (
-                  <p className="text-xs text-[#008A05] text-center font-medium">Prize claimed</p>
+                {user?.profile.address === raffle.winner?.address && prizeClaimed && (
+                  <p className="text-xs text-[#008A05] text-center font-medium">✓ Prize claimed</p>
+                )}
+
+                {/* Nothing to claim */}
+                {(principalClaimed || userDeposit.isWithdrawn || userDeposit.principalAmount === 0) &&
+                  (user?.profile.address !== raffle.winner?.address || prizeClaimed) && (
+                  <p className="text-xs text-[#717171] text-center">All funds have been claimed or withdrawn.</p>
                 )}
               </div>
+            )}
+
+            {/* Prompt non-depositors or signed-out users */}
+            {!isAuthenticated && (
+              <Button fullWidth onClick={openAuthModal}>
+                Sign In to Check Claims
+              </Button>
             )}
           </div>
         )}
