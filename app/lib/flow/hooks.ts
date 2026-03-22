@@ -11,6 +11,8 @@ import {
   COMMIT_RAFFLE,
   REVEAL_WINNER,
   SIMULATE_YIELD,
+  CLAIM_PRINCIPAL,
+  CLAIM_PRIZE,
   GET_PYUSD_BALANCE,
   GET_RAFFLE,
   GET_ALL_RAFFLE_IDS,
@@ -243,6 +245,28 @@ export function useRevealWinner() {
     });
   };
   return { revealWinner, isPending };
+}
+
+export function useClaimPrincipal() {
+  const { mutateAsync, isPending } = useClientMutate();
+  const claimPrincipal = async (raffleId: number) => {
+    return await mutateAsync({
+      cadence: CLAIM_PRINCIPAL,
+      args: (arg, t) => [arg(String(raffleId), t.UInt64)],
+    });
+  };
+  return { claimPrincipal, isPending };
+}
+
+export function useClaimPrize() {
+  const { mutateAsync, isPending } = useClientMutate();
+  const claimPrize = async (raffleId: number) => {
+    return await mutateAsync({
+      cadence: CLAIM_PRIZE,
+      args: (arg, t) => [arg(String(raffleId), t.UInt64)],
+    });
+  };
+  return { claimPrize, isPending };
 }
 
 export function useSimulateYield() {

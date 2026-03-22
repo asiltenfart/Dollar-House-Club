@@ -11,7 +11,7 @@ import SkillQuestionModal from "./SkillQuestionModal";
 import { useAuth } from "@/lib/auth/AuthContext";
 import { useToast } from "@/components/ui/Toast";
 import Confetti from "./Confetti";
-import { useDepositToRaffle, useWithdrawFromRaffle, usePYUSDBalance } from "@/lib/flow/hooks";
+import { useDepositToRaffle, useWithdrawFromRaffle, useClaimPrincipal, useClaimPrize, usePYUSDBalance } from "@/lib/flow/hooks";
 
 interface DepositCardProps {
   raffle: Raffle;
@@ -32,11 +32,17 @@ export default function DepositCard({
   const { showToast } = useToast();
   const { depositToRaffle } = useDepositToRaffle();
   const { withdrawFromRaffle } = useWithdrawFromRaffle();
+  const { claimPrincipal } = useClaimPrincipal();
+  const { claimPrize } = useClaimPrize();
   const { data: pyusdBalance } = usePYUSDBalance(user?.profile.address ?? null);
   const [amount, setAmount] = useState("");
   const [amountError, setAmountError] = useState("");
   const [isDepositing, setIsDepositing] = useState(false);
   const [isWithdrawing, setIsWithdrawing] = useState(false);
+  const [isClaimingPrincipal, setIsClaimingPrincipal] = useState(false);
+  const [isClaimingPrize, setIsClaimingPrize] = useState(false);
+  const [principalClaimed, setPrincipalClaimed] = useState(false);
+  const [prizeClaimed, setPrizeClaimed] = useState(raffle.prizeClaimed);
   const [showSkillModal, setShowSkillModal] = useState(false);
   const [showDepositConfirm, setShowDepositConfirm] = useState(false);
   const [showWithdrawConfirm, setShowWithdrawConfirm] = useState(false);
@@ -255,11 +261,75 @@ export default function DepositCard({
         )}
 
         {!isActive && raffle.winner && (
-          <div className="mt-4 pt-4 border-t border-[#EBEBEB] bg-[#E6F9E7] rounded-[8px] p-3 text-center">
-            <p className="text-sm font-semibold text-[#008A05]">
-              Winner: {raffle.winner.displayName}
-            </p>
-            <p className="text-xs text-[#717171] mt-1">Raffle completed</p>
+          <div className="mt-4 pt-4 border-t border-[#EBEBEB]">
+            <div className="bg-[#E6F9E7] rounded-[8px] p-3 text-center mb-4">
+              <p className="text-sm font-semibold text-[#008A05]">
+                Winner: {raffle.winner.displayName}
+              </p>
+              <p className="text-xs text-[#717171] mt-1">Raffle completed</p>
+            </div>
+
+            {/* Claim buttons — only show for users with a deposit */}
+            {isAuthenticated && userDeposit && !userDeposit.isWithdrawn && (
+              <div className="space-y-3">
+                {/* Claim Principal — available to all depositors */}
+                {!principalClaimed && (
+                  <Button
+                    variant="outline"
+                    fullWidth
+                    isLoading={isClaimingPrincipal}
+                    onClick={async () => {
+                      setIsClaimingPrincipal(true);
+                      try {
+                        const raffleIdNum = parseInt(raffle.id.replace("raffle-", ""), 10) || parseInt(raffle.id, 10);
+                        await claimPrincipal(raffleIdNum);
+                        setPrincipalClaimed(true);
+                        showToast("Principal claimed successfully!", "success");
+                        onWithdrawSuccess?.();
+                      } catch (e) {
+                        showToast("Failed to claim principal. Please try again.", "error");
+                        console.error("Claim principal error:", e);
+                      }
+                      setIsClaimingPrincipal(false);
+                    }}
+                  >
+                    {isClaimingPrincipal ? "" : `Claim Principal (${formatUSD(userDeposit.principalAmount)})`}
+                  </Button>
+                )}
+
+                {/* Claim Prize — only for the winner */}
+                {user?.profile.address === raffle.winner.address && !prizeClaimed && (
+                  <Button
+                    fullWidth
+                    isLoading={isClaimingPrize}
+                    onClick={async () => {
+                      setIsClaimingPrize(true);
+                      try {
+                        const raffleIdNum = parseInt(raffle.id.replace("raffle-", ""), 10) || parseInt(raffle.id, 10);
+                        await claimPrize(raffleIdNum);
+                        setPrizeClaimed(true);
+                        showToast(`Prize of ${formatUSD(raffle.totalYieldEarned)} claimed!`, "success");
+                        onDepositSuccess?.(0);
+                      } catch (e) {
+                        showToast("Failed to claim prize. Please try again.", "error");
+                        console.error("Claim prize error:", e);
+                      }
+                      setIsClaimingPrize(false);
+                    }}
+                  >
+                    {isClaimingPrize ? "" : `Claim Prize (${formatUSD(raffle.totalYieldEarned)})`}
+                  </Button>
+                )}
+
+                {/* Already claimed states */}
+                {principalClaimed && (
+                  <p className="text-xs text-[#008A05] text-center font-medium">Principal claimed</p>
+                )}
+                {user?.profile.address === raffle.winner.address && prizeClaimed && (
+                  <p className="text-xs text-[#008A05] text-center font-medium">Prize claimed</p>
+                )}
+              </div>
+            )}
           </div>
         )}
       </div>
