@@ -6,11 +6,20 @@ import type { UserProfile } from "@/types";
 import { formatDate } from "@/lib/utils/format";
 import { getAvatar } from "@/lib/utils/avatars";
 
-interface ProfileHeaderProps {
-  user: UserProfile;
+interface ProfileStats {
+  rafflesEntered: number;
+  rafflesWon: number;
+  rafflesListed: number;
+  rafflesCompleted: number;
+  yieldWon: number;
 }
 
-export default function ProfileHeader({ user }: ProfileHeaderProps) {
+interface ProfileHeaderProps {
+  user: UserProfile;
+  stats?: ProfileStats;
+}
+
+export default function ProfileHeader({ user, stats }: ProfileHeaderProps) {
   const avatar = useMemo(() => getAvatar(user.address), [user.address]);
 
   return (
@@ -49,20 +58,20 @@ export default function ProfileHeader({ user }: ProfileHeaderProps) {
       {/* Reputation / member since */}
       <p className="text-sm text-[#717171] mb-6">
         Member since {formatDate(user.joinedAt)}
-        {user.rafflesWon > 0 && (
+        {(stats?.rafflesWon ?? user.rafflesWon) > 0 && (
           <span className="ml-2 inline-flex items-center gap-1 bg-[#FFF4E5] text-[#E07912] text-xs font-semibold px-2 py-0.5 rounded-full">
-            ⭐ {user.rafflesWon} {user.rafflesWon === 1 ? "win" : "wins"}
+            ⭐ {stats?.rafflesWon ?? user.rafflesWon} {(stats?.rafflesWon ?? user.rafflesWon) === 1 ? "win" : "wins"}
           </span>
         )}
       </p>
 
       {/* Stats row */}
       <div className="flex items-center gap-8">
-        <StatItem value={user.rafflesEntered} label="Raffles Entered" />
+        <StatItem value={stats?.rafflesEntered ?? user.rafflesEntered} label="Raffles Entered" />
         <div className="w-px h-8 bg-[#EBEBEB]" />
-        <StatItem value={user.rafflesWon} label="Raffles Won" />
+        <StatItem value={stats?.rafflesWon ?? user.rafflesWon} label="Raffles Won" />
         <div className="w-px h-8 bg-[#EBEBEB]" />
-        <StatItem value={user.rafflesListed} label="Properties Listed" />
+        <StatItem value={stats?.rafflesListed ?? user.rafflesListed} label="Properties Listed" />
       </div>
     </div>
   );

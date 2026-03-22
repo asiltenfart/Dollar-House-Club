@@ -245,6 +245,21 @@ transaction(raffleId: UInt64) {
 }
 `;
 
+export const GET_USER_DEPOSITED_RAFFLE_IDS = `
+import "DollarHouseRaffle"
+
+access(all) fun main(user: Address): [UInt64] {
+    let allIds = DollarHouseRaffle.getAllRaffleIds()
+    var result: [UInt64] = []
+    for id in allIds {
+        if DollarHouseRaffle.getDeposit(raffleId: id, depositor: user) != nil {
+            result.append(id)
+        }
+    }
+    return result
+}
+`;
+
 export const GET_PENDING_YIELD = `
 import "SimpleYieldSource"
 

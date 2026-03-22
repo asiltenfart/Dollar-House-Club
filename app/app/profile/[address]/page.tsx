@@ -3,7 +3,7 @@
 import React, { useState, use } from "react";
 import { notFound } from "next/navigation";
 import { getUserProfile } from "@/lib/api/mock";
-import { useRaffles } from "@/lib/data/useRaffleData";
+import { useRaffles, useProfileStats, useUserDepositedRaffleIds } from "@/lib/data/useRaffleData";
 import { useAuth } from "@/lib/auth/AuthContext";
 import ProfileHeader from "@/components/profile/ProfileHeader";
 import TabBar, { type ProfileTab } from "@/components/profile/TabBar";
@@ -26,6 +26,8 @@ export default function ProfilePage({ params }: PageProps) {
     mockUser ?? (authUser?.profile.address === address ? authUser.profile : null);
 
   const { raffles } = useRaffles();
+  const stats = useProfileStats(raffles, address);
+  const depositedIds = useUserDepositedRaffleIds(raffles, address);
   const [activeTab, setActiveTab] = useState<ProfileTab>("deposits");
 
   if (!user) {
@@ -34,7 +36,7 @@ export default function ProfilePage({ params }: PageProps) {
 
   const listedRaffles = raffles.filter((r) => r.seller.address === address);
   const wonRaffles = raffles.filter((r) => r.winner?.address === address);
-  const depositedRaffles = raffles.filter((r) => r.status === "active").slice(0, 2);
+  const depositedRaffles = raffles.filter((r) => depositedIds.has(r.id));
 
   const tabContent = {
     deposits: depositedRaffles,
@@ -53,7 +55,7 @@ export default function ProfilePage({ params }: PageProps) {
 
   return (
     <div>
-      <ProfileHeader user={user} />
+      <ProfileHeader user={user} stats={stats} />
 
       <TabBar active={activeTab} onChange={setActiveTab} />
 
