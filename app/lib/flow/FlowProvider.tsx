@@ -9,6 +9,7 @@ const flowJSON = {
   contracts: {
     DummyPYUSD: { source: "./cadence/contracts/DummyPYUSD.cdc" },
     DollarHouseRaffle: { source: "./cadence/contracts/DollarHouseRaffle.cdc" },
+    SimpleYieldSource: { source: "./cadence/contracts/SimpleYieldSource.cdc" },
     Xorshift128plus: { source: "./cadence/contracts/Xorshift128plus.cdc" },
     RandomConsumer: { source: "./cadence/contracts/RandomConsumer.cdc" },
   },
@@ -79,6 +80,7 @@ const flowJSON = {
         "Xorshift128plus",
         "RandomConsumer",
         "DummyPYUSD",
+        "SimpleYieldSource",
         "DollarHouseRaffle",
       ],
     },
