@@ -1,9 +1,13 @@
+"use client";
+
 import React from "react";
-import { getCompletedRaffles } from "@/lib/api/mock";
+import { useRaffles } from "@/lib/data/useRaffleData";
 import RaffleCard from "@/components/raffle/RaffleCard";
+import { RaffleCardSkeleton } from "@/components/ui/Skeleton";
 
 export default function WinnersPage() {
-  const completed = getCompletedRaffles();
+  const { raffles, isLoading } = useRaffles();
+  const completed = raffles.filter((r) => r.status !== "active");
 
   return (
     <div style={{ padding: "32px 24px 80px" }}>
@@ -20,7 +24,13 @@ export default function WinnersPage() {
           </p>
         </div>
 
-        {completed.length === 0 ? (
+        {isLoading ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {Array.from({ length: 3 }).map((_, i) => (
+              <RaffleCardSkeleton key={i} />
+            ))}
+          </div>
+        ) : completed.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-20 text-center">
             <div className="w-20 h-20 rounded-full bg-[#F7F7F7] flex items-center justify-center mb-6">
               <svg width="36" height="36" viewBox="0 0 36 36" fill="none">
