@@ -184,7 +184,7 @@ access(all) fun main(address: Address): UFix64 {
 export const GET_RAFFLE = `
 import "DollarHouseRaffle"
 
-access(all) fun main(raffleId: UInt64): DollarHouseRaffle.RaffleData? {
+access(all) fun main(raffleId: UInt64): DollarHouseRaffle.RaffleView? {
     return DollarHouseRaffle.getRaffle(raffleId: raffleId)
 }
 `;
@@ -200,9 +200,9 @@ access(all) fun main(): [UInt64] {
 export const GET_ALL_RAFFLES = `
 import "DollarHouseRaffle"
 
-access(all) fun main(): [DollarHouseRaffle.RaffleData] {
+access(all) fun main(): [DollarHouseRaffle.RaffleView] {
     let ids = DollarHouseRaffle.getAllRaffleIds()
-    let results: [DollarHouseRaffle.RaffleData] = []
+    let results: [DollarHouseRaffle.RaffleView] = []
     for id in ids {
         if let raffle = DollarHouseRaffle.getRaffle(raffleId: id) {
             results.append(raffle)
@@ -215,7 +215,7 @@ access(all) fun main(): [DollarHouseRaffle.RaffleData] {
 export const GET_DEPOSIT = `
 import "DollarHouseRaffle"
 
-access(all) fun main(raffleId: UInt64, depositor: Address): DollarHouseRaffle.DepositInfo? {
+access(all) fun main(raffleId: UInt64, depositor: Address): DollarHouseRaffle.DepositView? {
     return DollarHouseRaffle.getDeposit(raffleId: raffleId, depositor: depositor)
 }
 `;
@@ -223,7 +223,7 @@ access(all) fun main(raffleId: UInt64, depositor: Address): DollarHouseRaffle.De
 export const GET_ALL_DEPOSITS = `
 import "DollarHouseRaffle"
 
-access(all) fun main(raffleId: UInt64): {Address: DollarHouseRaffle.DepositInfo} {
+access(all) fun main(raffleId: UInt64): {Address: DollarHouseRaffle.DepositView} {
     return DollarHouseRaffle.getAllDeposits(raffleId: raffleId)
 }
 `;

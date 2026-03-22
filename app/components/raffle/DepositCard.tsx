@@ -163,23 +163,27 @@ export default function DepositCard({
       >
         {/* User position — prominent banner at top */}
         {userDeposit && (
-          <div className="bg-[#F0FFF4] border border-[#B7EBC9] rounded-[10px] p-4 mb-5">
+          <div className={`${userDeposit.isWithdrawn ? "bg-[#FFFBF0] border-[#F0DCA0]" : "bg-[#F0FFF4] border-[#B7EBC9]"} border rounded-[10px] p-4 mb-5`}>
             <div className="flex items-center gap-2 mb-3">
-              <div className="w-6 h-6 rounded-full bg-[#008A05] flex items-center justify-center">
+              <div className={`w-6 h-6 rounded-full ${userDeposit.isWithdrawn ? "bg-[#B08D2C]" : "bg-[#008A05]"} flex items-center justify-center`}>
                 <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
                   <path d="M3 7L6 10L11 4" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                 </svg>
               </div>
-              <span className="text-sm font-bold text-[#008A05]">You&apos;re in this raffle</span>
-            </div>
-            <div className="flex items-center justify-between mb-1">
-              <span className="text-sm text-[#4A7C59]">Your deposit</span>
-              <span className="text-sm font-bold text-[#222222]">
-                {formatUSD(userDeposit.principalAmount)}
+              <span className={`text-sm font-bold ${userDeposit.isWithdrawn ? "text-[#B08D2C]" : "text-[#008A05]"}`}>
+                {userDeposit.isWithdrawn ? "Principal withdrawn — yield still earning" : "You\u0027re in this raffle"}
               </span>
             </div>
+            {!userDeposit.isWithdrawn && (
+              <div className="flex items-center justify-between mb-1">
+                <span className="text-sm text-[#4A7C59]">Your deposit</span>
+                <span className="text-sm font-bold text-[#222222]">
+                  {formatUSD(userDeposit.principalAmount)}
+                </span>
+              </div>
+            )}
             <div className="flex items-center justify-between">
-              <span className="text-sm text-[#4A7C59]">Win chance</span>
+              <span className={`text-sm ${userDeposit.isWithdrawn ? "text-[#8A7430]" : "text-[#4A7C59]"}`}>Win chance</span>
               <span className="text-sm font-bold text-[#FF385C]">
                 {formatPercent(userDeposit.winChance)}
               </span>
@@ -233,8 +237,8 @@ export default function DepositCard({
               {isDepositing ? "" : isAuthenticated ? "Deposit" : "Sign In to Deposit"}
             </Button>
 
-            {/* Withdraw button */}
-            {userDeposit && (
+            {/* Withdraw button — hide if already withdrawn */}
+            {userDeposit && !userDeposit.isWithdrawn && (
               <div className="mt-4 pt-4 border-t border-[#EBEBEB]">
                 <Button
                   variant="outline"

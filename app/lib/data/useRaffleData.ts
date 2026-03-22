@@ -207,7 +207,7 @@ export function useOnChainUserDeposit(
             yieldGenerated: 0,
             winChance,
             depositedAt: new Date(parseFloat(depositResult.depositedAt) * 1000).toISOString(),
-            isWithdrawn: false,
+            isWithdrawn: depositResult.isWithdrawn === true,
           });
         } else if (!cancelled) {
           setDeposit(null);

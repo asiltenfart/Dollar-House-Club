@@ -1,7 +1,7 @@
 import "DollarHouseRaffle"
 
-/// Returns raffle data for a given raffle ID.
+/// Returns raffle view data for a given raffle ID.
 ///
-access(all) fun main(raffleId: UInt64): DollarHouseRaffle.RaffleData? {
+access(all) fun main(raffleId: UInt64): DollarHouseRaffle.RaffleView? {
     return DollarHouseRaffle.getRaffle(raffleId: raffleId)
 }
