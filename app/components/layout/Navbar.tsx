@@ -8,6 +8,7 @@ import { useDataSource } from "@/lib/data/DataSourceContext";
 import AuthModal from "@/components/ui/AuthModal";
 import Button from "@/components/ui/Button";
 import DemoFaucet from "@/components/ui/DemoFaucet";
+import DevCreateRaffle from "@/components/ui/DevCreateRaffle";
 
 export default function Navbar() {
   const [isScrolled, setIsScrolled] = useState(false);
@@ -63,8 +64,9 @@ export default function Navbar() {
           <div className="flex items-center gap-3">
             {isAuthenticated && user ? (
               <div className="flex items-center gap-3">
-                <div className="hidden md:block">
+                <div className="hidden md:flex items-center gap-2">
                   <DemoFaucet />
+                  <DevCreateRaffle />
                 </div>
                 <Link
                   href={`/profile/${user.profile.address}/create`}
