@@ -83,7 +83,7 @@ access(all) contract DollarHouseRaffle {
         access(all) let winner: Address?
         access(all) let prizeClaimed: Bool
 
-        init(
+        view init(
             id: UInt64, seller: Address, title: String, description: String,
             targetValue: UFix64, createdAt: UFix64, expiresAt: UFix64,
             totalDeposited: UFix64, totalYield: UFix64, totalYieldWeight: UFix64,
@@ -114,7 +114,7 @@ access(all) contract DollarHouseRaffle {
         access(all) let yieldWeight: UFix64
         access(all) let isWithdrawn: Bool
 
-        init(
+        view init(
             depositor: Address, amount: UFix64, depositedAt: UFix64,
             yieldWeight: UFix64, isWithdrawn: Bool
         ) {
@@ -130,10 +130,10 @@ access(all) contract DollarHouseRaffle {
 
     access(all) resource Deposit {
         access(all) let depositor: Address
-        access(contract) var amount: UFix64
+        access(all) var amount: UFix64
         access(all) let depositedAt: UFix64
-        access(contract) var yieldWeight: UFix64
-        access(contract) var isWithdrawn: Bool
+        access(all) var yieldWeight: UFix64
+        access(all) var isWithdrawn: Bool
 
         init(depositor: Address, amount: UFix64, depositedAt: UFix64, yieldWeight: UFix64) {
             self.depositor = depositor
@@ -177,13 +177,13 @@ access(all) contract DollarHouseRaffle {
         access(all) let targetValue: UFix64
         access(all) let createdAt: UFix64
         access(all) let expiresAt: UFix64
-        access(contract) var totalDeposited: UFix64
-        access(contract) var totalYield: UFix64
-        access(contract) var totalYieldWeight: UFix64
-        access(contract) var depositorCount: UInt64
-        access(contract) var status: RaffleStatus
-        access(contract) var winner: Address?
-        access(contract) var prizeClaimed: Bool
+        access(all) var totalDeposited: UFix64
+        access(all) var totalYield: UFix64
+        access(all) var totalYieldWeight: UFix64
+        access(all) var depositorCount: UInt64
+        access(all) var status: RaffleStatus
+        access(all) var winner: Address?
+        access(all) var prizeClaimed: Bool
         access(contract) let deposits: @{Address: Deposit}
 
         init(
