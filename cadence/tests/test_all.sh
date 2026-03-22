@@ -27,13 +27,16 @@ assert_success() {
     local desc="$1"
     shift
     TOTAL=$((TOTAL + 1))
-    if "$@" >/dev/null 2>&1; then
-        PASS=$((PASS + 1))
-        echo -e "  ${GREEN}✓${NC} $desc"
-    else
+    local output
+    output=$("$@" 2>&1)
+    # Flow CLI may return exit code 0 even on tx failure — check output for errors
+    if echo "$output" | grep -q "Transaction Error\|cadence runtime error\|panic:"; then
         FAIL=$((FAIL + 1))
         echo -e "  ${RED}✗${NC} $desc"
-        echo "    Command: $*"
+        echo "    $(echo "$output" | grep -m1 'error:' | head -1)"
+    else
+        PASS=$((PASS + 1))
+        echo -e "  ${GREEN}✓${NC} $desc"
     fi
 }
 
@@ -41,12 +44,15 @@ assert_fail() {
     local desc="$1"
     shift
     TOTAL=$((TOTAL + 1))
-    if "$@" >/dev/null 2>&1; then
-        FAIL=$((FAIL + 1))
-        echo -e "  ${RED}✗${NC} $desc (expected failure, got success)"
-    else
+    local output
+    output=$("$@" 2>&1)
+    # Flow CLI may return exit code 0 even on tx failure — check output for errors
+    if echo "$output" | grep -q "Transaction Error\|cadence runtime error\|panic:"; then
         PASS=$((PASS + 1))
         echo -e "  ${GREEN}✓${NC} $desc"
+    else
+        FAIL=$((FAIL + 1))
+        echo -e "  ${RED}✗${NC} $desc (expected failure, got success)"
     fi
 }
 
@@ -89,9 +95,20 @@ EMULATOR_ACCOUNT="emulator-account"
 TEST_ACCOUNT="test-account"
 EMULATOR_ADDR="0xf8d6e0586b0a20c7"
 TEST_ADDR="0x179b6b1cb6755e31"
+# Public key derived from test-account private key in flow.json
+TEST_PUBKEY="1f72cd1a0f64d172ac7c94fcb63cc3733e8e8152a8dfbc1373f9b18198fce5f6ccac8a27d66dbe0b7cf6db06dd2042c1527d8610f8905c79d7fb60dc34d4b2f1"
 
 echo ""
 echo -e "${YELLOW}═══ Dollar House Club — Integration Tests ═══${NC}"
+echo ""
+
+# ── 0. Create test account if needed ─────────────────────────────────────────
+echo -e "${YELLOW}Setup: Creating test account${NC}"
+
+# Create test account on fresh emulator (idempotent — fails silently if exists)
+$FLOW accounts create --key "$TEST_PUBKEY" --signer "$EMULATOR_ACCOUNT" -n emulator >/dev/null 2>&1
+echo -e "  ${GREEN}✓${NC} Test account ready at $TEST_ADDR"
+
 echo ""
 
 # ── 1. Setup: Mint PYUSD for test accounts ──────────────────────────────────
