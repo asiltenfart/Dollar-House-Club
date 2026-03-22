@@ -9,6 +9,7 @@ interface DataSourceContextValue {
   toggleDataSource: () => void;
   isMock: boolean;
   isOnChain: boolean;
+  isHydrated: boolean;
 }
 
 const DataSourceContext = createContext<DataSourceContextValue>({
@@ -16,6 +17,7 @@ const DataSourceContext = createContext<DataSourceContextValue>({
   toggleDataSource: () => {},
   isMock: true,
   isOnChain: false,
+  isHydrated: false,
 });
 
 export function useDataSource() {
@@ -32,10 +34,12 @@ function getStoredSource(): DataSource {
 
 export function DataSourceProvider({ children }: { children: React.ReactNode }) {
   const [dataSource, setDataSource] = useState<DataSource>("mock");
+  const [isHydrated, setIsHydrated] = useState(false);
 
   // Hydrate from localStorage on mount
   useEffect(() => {
     setDataSource(getStoredSource());
+    setIsHydrated(true);
   }, []);
 
   const toggleDataSource = useCallback(() => {
@@ -53,6 +57,7 @@ export function DataSourceProvider({ children }: { children: React.ReactNode }) 
         toggleDataSource,
         isMock: dataSource === "mock",
         isOnChain: dataSource === "onchain",
+        isHydrated,
       }}
     >
       {children}

@@ -34,7 +34,11 @@ export function useRaffles(): { raffles: Raffle[]; isLoading: boolean } {
     });
 
     return () => { cancelled = true; };
-  }, [isMock]);
+  }, [isMock, isHydrated]);
+
+  if (!isHydrated) {
+    return { raffles: [], isLoading: true };
+  }
 
   if (isMock) {
     return { raffles: MOCK_RAFFLES, isLoading: false };
@@ -46,14 +50,18 @@ export function useRaffles(): { raffles: Raffle[]; isLoading: boolean } {
 // ── Fetch single raffle by ID (mock or on-chain) ────────────────────────────
 
 export function useRaffleById(id: string): { raffle: Raffle | null; isLoading: boolean } {
-  const { isMock } = useDataSource();
+  const { isMock, isHydrated } = useDataSource();
   const [chainRaffle, setChainRaffle] = useState<Raffle | null>(null);
-  const [isLoading, setIsLoading] = useState(!isMock);
+  const [isLoading, setIsLoading] = useState(true);
 
   const raffleId = parseRaffleId(id);
 
   useEffect(() => {
-    if (isMock || isNaN(raffleId)) return;
+    if (!isHydrated) return;
+    if (isMock || isNaN(raffleId)) {
+      setIsLoading(false);
+      return;
+    }
 
     let cancelled = false;
     setIsLoading(true);
@@ -77,7 +85,11 @@ export function useRaffleById(id: string): { raffle: Raffle | null; isLoading: b
     });
 
     return () => { cancelled = true; };
-  }, [isMock, raffleId]);
+  }, [isMock, isHydrated, raffleId]);
+
+  if (!isHydrated) {
+    return { raffle: null, isLoading: true };
+  }
 
   if (isMock) {
     return { raffle: getMockRaffle(id) ?? null, isLoading: false };
