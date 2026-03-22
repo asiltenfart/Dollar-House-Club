@@ -5,6 +5,8 @@ import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
 import { ToastProvider } from "@/components/ui/Toast";
 import { AuthProvider } from "@/lib/auth/AuthContext";
+import FlowProvider from "@/lib/flow/FlowProvider";
+import { DataSourceProvider } from "@/lib/data/DataSourceContext";
 
 const nunitoSans = Nunito_Sans({
   subsets: ["latin"],
@@ -27,7 +29,9 @@ export default function RootLayout({
   return (
     <html lang="en" className={nunitoSans.variable}>
       <body className="antialiased" style={{ fontFamily: "var(--font-nunito), 'Nunito Sans', sans-serif" }}>
+        <FlowProvider>
         <AuthProvider>
+          <DataSourceProvider>
           <ToastProvider>
             <Navbar />
             <main
@@ -38,7 +42,9 @@ export default function RootLayout({
             </main>
             <Footer />
           </ToastProvider>
+          </DataSourceProvider>
         </AuthProvider>
+        </FlowProvider>
       </body>
     </html>
   );

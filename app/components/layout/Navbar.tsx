@@ -3,13 +3,16 @@
 import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import { useAuth } from "@/lib/auth/AuthContext";
+import { useDataSource } from "@/lib/data/DataSourceContext";
 import AuthModal from "@/components/ui/AuthModal";
 import Button from "@/components/ui/Button";
+import DemoFaucet from "@/components/ui/DemoFaucet";
 
 export default function Navbar() {
   const [isScrolled, setIsScrolled] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const { user, isAuthenticated, signOut, showAuthModal, openAuthModal, closeAuthModal } = useAuth();
+  const { isMock, toggleDataSource } = useDataSource();
 
   useEffect(() => {
     const observer = new IntersectionObserver(
@@ -56,10 +59,16 @@ export default function Navbar() {
             <NavLink href="/winners">Winners</NavLink>
           </nav>
 
+          {/* Data source toggle */}
+          <DataSourceToggle isMock={isMock} onToggle={toggleDataSource} />
+
           {/* Auth area */}
           <div className="flex items-center gap-3">
             {isAuthenticated && user ? (
               <div className="flex items-center gap-3">
+                <div className="hidden md:block">
+                  <DemoFaucet />
+                </div>
                 <Link
                   href={`/profile/${user.profile.address}/create`}
                   className="hidden md:block text-sm font-semibold text-[#222222] hover:text-[#FF385C] transition-colors duration-150"
@@ -138,6 +147,27 @@ function MobileNavLink({ href, children, onClick }: { href: string; children: Re
     >
       {children}
     </Link>
+  );
+}
+
+function DataSourceToggle({ isMock, onToggle }: { isMock: boolean; onToggle: () => void }) {
+  return (
+    <button
+      onClick={onToggle}
+      className="hidden md:flex items-center gap-2 h-8 px-3 rounded-full border transition-all duration-200 cursor-pointer text-xs font-semibold shrink-0"
+      style={{
+        borderColor: isMock ? "#DDDDDD" : "#00EF8B",
+        background: isMock ? "#F7F7F7" : "#F0FFF4",
+        color: isMock ? "#717171" : "#008A05",
+      }}
+      title={isMock ? "Showing mock data — click to switch to on-chain" : "Showing on-chain data — click to switch to mock"}
+    >
+      <span
+        className="w-2 h-2 rounded-full"
+        style={{ background: isMock ? "#B0B0B0" : "#00EF8B" }}
+      />
+      {isMock ? "Mock Data" : "On-Chain"}
+    </button>
   );
 }
 

@@ -2,7 +2,7 @@
 
 import React, { useState, use } from "react";
 import { notFound } from "next/navigation";
-import { getRaffle, getMockDepositsForRaffle } from "@/lib/api/mock";
+import { useRaffleById, useRaffleDeposits, parseRaffleId } from "@/lib/data/useRaffleData";
 import { useAuth } from "@/lib/auth/AuthContext";
 import PropertyGallery from "@/components/raffle/PropertyGallery";
 import DepositCard from "@/components/raffle/DepositCard";
@@ -10,6 +10,7 @@ import WinnerReveal from "@/components/raffle/WinnerReveal";
 import { RaffleStatusBadge } from "@/components/ui/Badge";
 import { formatUSD, formatDate, formatTimeLeft } from "@/lib/utils/format";
 import Link from "next/link";
+import RaffleSettlement from "@/components/raffle/RaffleSettlement";
 
 interface PageProps {
   params: Promise<{ id: string }>;
@@ -17,17 +18,24 @@ interface PageProps {
 
 export default function RaffleDetailPage({ params }: PageProps) {
   const { id } = use(params);
-  const raffle = getRaffle(id);
+  const { raffle, isLoading } = useRaffleById(id);
+  const { deposits } = useRaffleDeposits(id);
   const { user } = useAuth();
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center py-32">
+        <div className="w-10 h-10 border-3 border-[#FF385C] border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
 
   if (!raffle) {
     notFound();
   }
 
-  const deposits = getMockDepositsForRaffle(id);
   const isSeller = user?.profile.address === raffle.seller.address;
 
-  // For demo, show user deposit if they're logged in
   const userDeposit = user
     ? deposits.find((d) => d.user.address === user.profile.address) ?? null
     : null;
@@ -58,6 +66,14 @@ export default function RaffleDetailPage({ params }: PageProps) {
       </div>
 
       <div style={{ maxWidth: "1440px", margin: "0 auto", padding: "0 24px" }}>
+        {/* Settlement UI for expired raffles */}
+        <div className="pt-6">
+          <RaffleSettlement
+            raffleId={parseRaffleId(id)}
+            status={raffle.status}
+          />
+        </div>
+
         {/* Winner reveal banner */}
         {raffle.winner && (
           <div className="pt-6">

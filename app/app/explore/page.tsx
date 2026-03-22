@@ -1,10 +1,10 @@
 "use client";
 
 import React, { useState, useMemo } from "react";
-import { MOCK_RAFFLES } from "@/lib/api/mock";
+import { useRaffles } from "@/lib/data/useRaffleData";
 import RaffleCard from "@/components/raffle/RaffleCard";
 import { RaffleCardSkeleton } from "@/components/ui/Skeleton";
-import type { Raffle, ExploreFilters } from "@/types";
+import type { ExploreFilters } from "@/types";
 
 const PER_PAGE = 12;
 
@@ -16,10 +16,10 @@ export default function ExplorePage() {
     page: 1,
     perPage: 12,
   });
-  const [loading] = useState(false);
+  const { raffles, isLoading: loading } = useRaffles();
 
   const filtered = useMemo(() => {
-    let result = [...MOCK_RAFFLES];
+    let result = [...raffles];
 
     if (filters.status === "active") {
       result = result.filter((r) => r.status === "active");
@@ -48,7 +48,7 @@ export default function ExplorePage() {
     }
 
     return result;
-  }, [filters]);
+  }, [filters, raffles]);
 
   const paged = filtered.slice(0, filters.page * PER_PAGE);
   const hasMore = paged.length < filtered.length;
@@ -69,7 +69,7 @@ export default function ExplorePage() {
             Browse property raffles
           </h1>
           <p className="text-sm text-[#717171]">
-            {filtered.length} {filtered.length === 1 ? "raffle" : "raffles"} available
+            {loading ? "Loading..." : `${filtered.length} ${filtered.length === 1 ? "raffle" : "raffles"} available`}
           </p>
         </div>
       </div>

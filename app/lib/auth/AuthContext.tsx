@@ -8,15 +8,19 @@ import React, {
   useEffect,
 } from "react";
 import type { AuthUser, UserProfile } from "@/types";
-import { getMagic, getMagicFlow } from "@/lib/magic";
+import * as fcl from "@onflow/fcl";
 
-// ── Context shape ────────────────────────────────────────────────────────────
+// ── Mode detection ──────────────────────────────────────────────────────────
+const FLOW_NETWORK = process.env.NEXT_PUBLIC_FLOW_NETWORK || "emulator";
+export const isEmulatorMode = FLOW_NETWORK === "emulator";
+
+// ── Context shape ───────────────────────────────────────────────────────────
 
 interface AuthContextValue {
   user: AuthUser | null;
   isAuthenticated: boolean;
   isLoading: boolean;
-  signIn: (email: string) => Promise<void>;
+  signIn: (email?: string) => Promise<void>;
   signOut: () => void;
   showAuthModal: boolean;
   openAuthModal: () => void;
@@ -38,14 +42,18 @@ export function useAuth() {
   return useContext(AuthContext);
 }
 
-// ── Helper: build UserProfile from Magic metadata ────────────────────────────
+// ── Helper: build UserProfile ───────────────────────────────────────────────
 
-function buildProfile(email: string, flowAddress: string | null): UserProfile {
+function buildProfile(
+  flowAddress: string,
+  displayName?: string,
+  email?: string
+): UserProfile {
   return {
-    address: flowAddress ?? "0x0000000000000000",
-    displayName: email.split("@")[0],
+    address: flowAddress,
+    displayName: displayName || flowAddress.slice(0, 8),
     avatarUrl: null,
-    email,
+    email: email || "",
     rafflesEntered: 0,
     rafflesWon: 0,
     rafflesListed: 0,
@@ -54,47 +62,68 @@ function buildProfile(email: string, flowAddress: string | null): UserProfile {
   };
 }
 
-// ── Retrieve Flow address from Magic Flow extension ──────────────────────────
+// ── Magic helpers (lazy-loaded only in testnet mode) ────────────────────────
 
-async function getFlowAddress(): Promise<string | null> {
-  try {
-    const magic = getMagicFlow();
-    const account = await magic.flow.getAccount();
-    return account?.addr ?? account ?? null;
-  } catch {
-    // Flow address retrieval can fail on first load — non-critical
-  }
-  return null;
+async function getMagicModules() {
+  const { getMagic, getMagicFlow } = await import("@/lib/magic");
+  return { getMagic, getMagicFlow };
 }
 
-// ── Provider ─────────────────────────────────────────────────────────────────
+// ── Provider ────────────────────────────────────────────────────────────────
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<AuthUser | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [showAuthModal, setShowAuthModal] = useState(false);
 
-  // Check for existing Magic session on mount
+  // ── Emulator mode: subscribe to FCL current user ──────────────────────
   useEffect(() => {
+    if (!isEmulatorMode) return;
+
+    const unsub = fcl.currentUser.subscribe((currentUser: { addr?: string | null; loggedIn?: boolean }) => {
+      if (currentUser?.loggedIn && currentUser.addr) {
+        setUser({
+          profile: buildProfile(currentUser.addr, currentUser.addr),
+          isAuthenticated: true,
+        });
+      } else {
+        setUser(null);
+      }
+      setIsLoading(false);
+    });
+
+    return () => unsub();
+  }, []);
+
+  // ── Testnet mode: check existing Magic session on mount ───────────────
+  useEffect(() => {
+    if (isEmulatorMode) return;
     let cancelled = false;
 
     async function checkSession() {
       try {
+        const { getMagic, getMagicFlow } = await getMagicModules();
         const magic = getMagic();
         const loggedIn = await magic.user.isLoggedIn();
 
         if (loggedIn && !cancelled) {
           const metadata = await magic.user.getInfo();
           const email = metadata.email ?? "";
-          const flowAddress = await getFlowAddress();
-
+          let flowAddress = "0x0000000000000000";
+          try {
+            const magicFlow = getMagicFlow();
+            const account = await magicFlow.flow.getAccount();
+            flowAddress = account?.addr ?? account ?? flowAddress;
+          } catch {
+            // Flow address retrieval can fail on first load
+          }
           setUser({
-            profile: buildProfile(email, flowAddress),
+            profile: buildProfile(flowAddress, email.split("@")[0], email),
             isAuthenticated: true,
           });
         }
       } catch {
-        // No active session — user stays null
+        // No active session
       } finally {
         if (!cancelled) setIsLoading(false);
       }
@@ -106,31 +135,51 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     };
   }, []);
 
-  // Sign in with Magic Link (email OTP)
-  const signIn = useCallback(async (email: string) => {
-    const magic = getMagic();
-
-    // Sends email OTP and resolves when user enters the code
-    await magic.auth.loginWithEmailOTP({ email });
-
-    // Retrieve user metadata + Flow address after successful auth
-    const metadata = await magic.user.getInfo();
-    const flowAddress = await getFlowAddress();
-
-    setUser({
-      profile: buildProfile(metadata.email ?? email, flowAddress),
-      isAuthenticated: true,
-    });
-    setShowAuthModal(false);
+  // ── Sign in ───────────────────────────────────────────────────────────
+  const signIn = useCallback(async (email?: string) => {
+    if (isEmulatorMode) {
+      // FCL Dev Wallet handles everything in a popup
+      await fcl.authenticate();
+      setShowAuthModal(false);
+    } else {
+      // Magic Link email OTP
+      if (!email) throw new Error("Email required for testnet sign-in");
+      const { getMagic, getMagicFlow } = await getMagicModules();
+      const magic = getMagic();
+      await magic.auth.loginWithEmailOTP({ email });
+      const metadata = await magic.user.getInfo();
+      let flowAddress = "0x0000000000000000";
+      try {
+        const magicFlow = getMagicFlow();
+        const account = await magicFlow.flow.getAccount();
+        flowAddress = account?.addr ?? account ?? flowAddress;
+      } catch {
+        // non-critical
+      }
+      setUser({
+        profile: buildProfile(
+          flowAddress,
+          (metadata.email ?? email).split("@")[0],
+          metadata.email ?? email
+        ),
+        isAuthenticated: true,
+      });
+      setShowAuthModal(false);
+    }
   }, []);
 
-  // Sign out
+  // ── Sign out ──────────────────────────────────────────────────────────
   const signOut = useCallback(async () => {
-    try {
-      const magic = getMagic();
-      await magic.user.logout();
-    } catch {
-      // Proceed with local sign-out even if Magic call fails
+    if (isEmulatorMode) {
+      await fcl.unauthenticate();
+    } else {
+      try {
+        const { getMagic } = await getMagicModules();
+        const magic = getMagic();
+        await magic.user.logout();
+      } catch {
+        // Proceed with local sign-out
+      }
     }
     setUser(null);
   }, []);

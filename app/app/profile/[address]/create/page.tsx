@@ -6,6 +6,7 @@ import { useToast } from "@/components/ui/Toast";
 import Button from "@/components/ui/Button";
 import Input, { Textarea, Select } from "@/components/ui/Input";
 import { useRouter } from "next/navigation";
+import { useCreateRaffle } from "@/lib/flow/hooks";
 
 interface PageProps {
   params: Promise<{ address: string }>;
@@ -16,6 +17,7 @@ export default function CreateRafflePage({ params }: PageProps) {
   const { isAuthenticated, openAuthModal } = useAuth();
   const { showToast } = useToast();
   const router = useRouter();
+  const { createRaffle } = useCreateRaffle();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const proofInputRef = useRef<HTMLInputElement>(null);
 
@@ -101,11 +103,20 @@ export default function CreateRafflePage({ params }: PageProps) {
     if (!validate()) return;
 
     setIsSubmitting(true);
-    // Mock transaction
-    await new Promise((r) => setTimeout(r, 2000));
-    setIsSubmitting(false);
-    showToast("Your property raffle has been listed!", "success");
-    router.push(`/profile/${address}`);
+    try {
+      await createRaffle(
+        form.title,
+        form.description || "No description provided.",
+        parseFloat(form.targetValueUSD)
+      );
+      setIsSubmitting(false);
+      showToast("Your property raffle has been listed!", "success");
+      router.push(`/profile/${address}`);
+    } catch (e) {
+      setIsSubmitting(false);
+      showToast("Failed to create raffle. Please try again.", "error");
+      console.error("Create raffle error:", e);
+    }
   };
 
   if (!isAuthenticated) {

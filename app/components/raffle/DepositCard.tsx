@@ -11,6 +11,7 @@ import SkillQuestionModal from "./SkillQuestionModal";
 import { useAuth } from "@/lib/auth/AuthContext";
 import { useToast } from "@/components/ui/Toast";
 import Confetti from "./Confetti";
+import { useDepositToRaffle, useWithdrawFromRaffle, usePYUSDBalance } from "@/lib/flow/hooks";
 
 interface DepositCardProps {
   raffle: Raffle;
@@ -27,8 +28,11 @@ export default function DepositCard({
   onDepositSuccess,
   onWithdrawSuccess,
 }: DepositCardProps) {
-  const { isAuthenticated, openAuthModal } = useAuth();
+  const { isAuthenticated, openAuthModal, user } = useAuth();
   const { showToast } = useToast();
+  const { depositToRaffle } = useDepositToRaffle();
+  const { withdrawFromRaffle } = useWithdrawFromRaffle();
+  const { data: pyusdBalance } = usePYUSDBalance(user?.profile.address ?? null);
   const [amount, setAmount] = useState("");
   const [amountError, setAmountError] = useState("");
   const [isDepositing, setIsDepositing] = useState(false);
@@ -76,17 +80,18 @@ export default function DepositCard({
     depositCooldown.current = true;
 
     try {
-      // Mock transaction
-      await new Promise((r) => setTimeout(r, 1500));
+      const raffleIdNum = parseInt(raffle.id.replace("raffle-", ""), 10) || parseInt(raffle.id, 10);
+      await depositToRaffle(raffleIdNum, parseFloat(amount));
       setIsDepositing(false);
       setAmount("");
       setShowConfetti(true);
       setTimeout(() => setShowConfetti(false), 2500);
       onDepositSuccess?.(parseFloat(amount));
       showToast(`Deposited ${formatUSDDecimal(parseFloat(amount))} successfully!`, "success");
-    } catch {
+    } catch (e) {
       setIsDepositing(false);
       showToast("Transaction failed. Please try again.", "error");
+      console.error("Deposit error:", e);
     }
 
     setTimeout(() => {
@@ -98,13 +103,15 @@ export default function DepositCard({
     setShowWithdrawConfirm(false);
     setIsWithdrawing(true);
     try {
-      await new Promise((r) => setTimeout(r, 1200));
+      const raffleIdNum = parseInt(raffle.id.replace("raffle-", ""), 10) || parseInt(raffle.id, 10);
+      await withdrawFromRaffle(raffleIdNum);
       setIsWithdrawing(false);
       onWithdrawSuccess?.();
       showToast("Principal withdrawn successfully.", "success");
-    } catch {
+    } catch (e) {
       setIsWithdrawing(false);
       showToast("Withdrawal failed. Please try again.", "error");
+      console.error("Withdraw error:", e);
     }
   };
 
@@ -162,7 +169,7 @@ export default function DepositCard({
                   setAmountError("");
                 }}
                 error={amountError}
-                hint={`Min $10 · Balance: $2,500.00`}
+                hint={`Min $10 · Balance: ${pyusdBalance != null ? formatUSDDecimal(Number(pyusdBalance)) : "—"}`}
                 min={10}
                 step={1}
               />

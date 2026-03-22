@@ -12,6 +12,7 @@
     "@hookform/resolvers": "^5.2.2",
     "@magic-ext/flow": "^28.5.1",
     "@onflow/fcl": "^1.21.9",
+    "@onflow/kit": "^0.9.0",
     "@onflow/types": "^1.5.0",
     "framer-motion": "^12.35.0",
     "magic-sdk": "^33.6.1",
