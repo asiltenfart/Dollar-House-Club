@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, useEffect } from "react";
+import { useMemo, useState, useEffect, useCallback } from "react";
 import { useDataSource } from "./DataSourceContext";
 import { chainRaffleToFrontend, type ChainRaffleData } from "./adapter";
 import { MOCK_RAFFLES, getRaffle as getMockRaffle, getMockDepositsForRaffle } from "@/lib/api/mock";
@@ -9,10 +9,15 @@ import type { Raffle, Deposit } from "@/types";
 
 // ── Fetch all raffles (mock or on-chain) ────────────────────────────────────
 
-export function useRaffles(): { raffles: Raffle[]; isLoading: boolean } {
+export function useRaffles(): { raffles: Raffle[]; isLoading: boolean; refetch: () => void } {
   const { isMock, isHydrated } = useDataSource();
   const [chainRaffles, setChainRaffles] = useState<Raffle[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [fetchKey, setFetchKey] = useState(0);
+
+  const refetch = useCallback(() => {
+    setFetchKey((k) => k + 1);
+  }, []);
 
   useEffect(() => {
     if (!isHydrated || isMock) return;
@@ -34,27 +39,32 @@ export function useRaffles(): { raffles: Raffle[]; isLoading: boolean } {
     });
 
     return () => { cancelled = true; };
-  }, [isMock, isHydrated]);
+  }, [isMock, isHydrated, fetchKey]);
 
   if (!isHydrated) {
-    return { raffles: [], isLoading: true };
+    return { raffles: [], isLoading: true, refetch };
   }
 
   if (isMock) {
-    return { raffles: MOCK_RAFFLES, isLoading: false };
+    return { raffles: MOCK_RAFFLES, isLoading: false, refetch };
   }
 
-  return { raffles: chainRaffles, isLoading };
+  return { raffles: chainRaffles, isLoading, refetch };
 }
 
 // ── Fetch single raffle by ID (mock or on-chain) ────────────────────────────
 
-export function useRaffleById(id: string): { raffle: Raffle | null; isLoading: boolean } {
+export function useRaffleById(id: string): { raffle: Raffle | null; isLoading: boolean; refetch: () => void } {
   const { isMock, isHydrated } = useDataSource();
   const [chainRaffle, setChainRaffle] = useState<Raffle | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [fetchKey, setFetchKey] = useState(0);
 
   const raffleId = parseRaffleId(id);
+
+  const refetch = useCallback(() => {
+    setFetchKey((k) => k + 1);
+  }, []);
 
   useEffect(() => {
     if (!isHydrated) return;
@@ -85,17 +95,17 @@ export function useRaffleById(id: string): { raffle: Raffle | null; isLoading: b
     });
 
     return () => { cancelled = true; };
-  }, [isMock, isHydrated, raffleId]);
+  }, [isMock, isHydrated, raffleId, fetchKey]);
 
   if (!isHydrated) {
-    return { raffle: null, isLoading: true };
+    return { raffle: null, isLoading: true, refetch };
   }
 
   if (isMock) {
-    return { raffle: getMockRaffle(id) ?? null, isLoading: false };
+    return { raffle: getMockRaffle(id) ?? null, isLoading: false, refetch };
   }
 
-  return { raffle: chainRaffle, isLoading };
+  return { raffle: chainRaffle, isLoading, refetch };
 }
 
 // ── Fetch deposits for a raffle (mock or on-chain) ──────────────────────────
@@ -128,12 +138,17 @@ export function useRaffleDeposits(id: string, currentUser?: { profile: { address
 export function useOnChainUserDeposit(
   raffleId: string,
   userAddress: string | null
-): { userDeposit: Deposit | null; isLoading: boolean } {
+): { userDeposit: Deposit | null; isLoading: boolean; refetch: () => void } {
   const { isMock, isHydrated } = useDataSource();
   const [deposit, setDeposit] = useState<Deposit | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [fetchKey, setFetchKey] = useState(0);
 
   const numericId = parseRaffleId(raffleId);
+
+  const refetch = useCallback(() => {
+    setFetchKey((k) => k + 1);
+  }, []);
 
   useEffect(() => {
     if (!isHydrated || isMock || !userAddress || isNaN(numericId)) return;
@@ -152,7 +167,6 @@ export function useOnChainUserDeposit(
         });
 
         if (!cancelled && result) {
-          // result is DepositInfo: { depositor: Address, amount: UFix64, depositedAt: UFix64 }
           setDeposit({
             id: `dep-${raffleId}-${userAddress}`,
             raffleId,
@@ -184,9 +198,9 @@ export function useOnChainUserDeposit(
     });
 
     return () => { cancelled = true; };
-  }, [isMock, isHydrated, numericId, userAddress, raffleId]);
+  }, [isMock, isHydrated, numericId, userAddress, raffleId, fetchKey]);
 
-  return { userDeposit: deposit, isLoading };
+  return { userDeposit: deposit, isLoading, refetch };
 }
 
 // ── Get raffle IDs where the current user has deposited ─────────────────────

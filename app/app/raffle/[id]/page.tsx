@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, use } from "react";
+import React, { useState, use, useCallback } from "react";
 import { notFound } from "next/navigation";
 import { useRaffleById, useRaffleDeposits, useOnChainUserDeposit, parseRaffleId } from "@/lib/data/useRaffleData";
 import { useAuth } from "@/lib/auth/AuthContext";
@@ -18,10 +18,15 @@ interface PageProps {
 
 export default function RaffleDetailPage({ params }: PageProps) {
   const { id } = use(params);
-  const { raffle, isLoading } = useRaffleById(id);
+  const { raffle, isLoading, refetch: refetchRaffle } = useRaffleById(id);
   const { user } = useAuth();
   const { deposits } = useRaffleDeposits(id, user);
-  const { userDeposit: onChainDeposit } = useOnChainUserDeposit(id, user?.profile.address ?? null);
+  const { userDeposit: onChainDeposit, refetch: refetchDeposit } = useOnChainUserDeposit(id, user?.profile.address ?? null);
+
+  const refetchAll = useCallback(() => {
+    refetchRaffle();
+    refetchDeposit();
+  }, [refetchRaffle, refetchDeposit]);
 
   if (isLoading) {
     return (
@@ -74,6 +79,7 @@ export default function RaffleDetailPage({ params }: PageProps) {
           <RaffleSettlement
             raffleId={parseRaffleId(id)}
             status={raffle.status}
+            onSettled={() => refetchAll()}
           />
         </div>
 
@@ -201,6 +207,8 @@ export default function RaffleDetailPage({ params }: PageProps) {
                 raffle={raffle}
                 userDeposit={userDeposit}
                 isSeller={isSeller}
+                onDepositSuccess={() => refetchAll()}
+                onWithdrawSuccess={() => refetchAll()}
               />
             </div>
           </div>
