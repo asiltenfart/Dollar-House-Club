@@ -24,10 +24,9 @@ export default function SkillBasedRulesPage() {
       <div className="flex flex-col gap-8 text-[#484848] text-[15px] leading-relaxed">
         <Section title="Why Skill-Based Entry?">
           <p>
-            Dollar House Club operates as a skill-based contest platform, not a lottery or game of
-            chance. To comply with federal and state regulations, every raffle participant must
-            demonstrate knowledge or skill by correctly answering a question before being eligible for
-            a drawing. This distinguishes our platform from illegal lotteries and gambling operations.
+            Every Dollar House Club participant answers a quick knowledge question before entering
+            a drawing. This ensures all entries are intentional and helps maintain a fair,
+            transparent platform for everyone.
           </p>
         </Section>
 
@@ -38,9 +37,9 @@ export default function SkillBasedRulesPage() {
               yield, and your share of the yield determines your proportional weight in the drawing.
             </RuleStep>
             <RuleStep number={2} title="Answer the Skill Question">
-              Before the raffle drawing, you must correctly answer a skill-based question. Questions
-              cover general knowledge categories including mathematics, geography, and current events.
-              Each question has one verifiably correct answer.
+              Before the raffle drawing, you'll answer a quick knowledge question. Questions
+              cover general topics like math, geography, and current events.
+              Each question has one clear, correct answer.
             </RuleStep>
             <RuleStep number={3} title="Qualify for the Drawing">
               Only participants who answer correctly are included in the weighted random drawing. If
@@ -69,9 +68,8 @@ export default function SkillBasedRulesPage() {
             </li>
           </ul>
           <p className="mt-2">
-            Questions are designed to be answerable by a reasonably informed adult. They are not trick
-            questions. The difficulty level is calibrated to ensure genuine skill assessment while
-            remaining accessible.
+            Questions are straightforward and designed to be answerable by anyone. No trick
+            questions — just simple general knowledge.
           </p>
         </Section>
 
@@ -119,19 +117,11 @@ export default function SkillBasedRulesPage() {
           </p>
         </Section>
 
-        <Section title="Legal Basis">
+        <Section title="Questions?">
           <p>
-            Skill-based contests are legally distinct from lotteries in most US jurisdictions. A
-            lottery requires three elements: (1) prize, (2) chance, and (3) consideration. By
-            introducing a meaningful skill component, Dollar House Club removes the pure-chance element.
-            Additionally, since participant principal is fully refundable, the &quot;consideration&quot;
-            element is also mitigated.
-          </p>
-          <p>
-            We work with legal counsel to ensure compliance in each jurisdiction where we operate. If
-            you have questions about legality in your area, consult a local attorney or contact us at{" "}
-            <a href="mailto:legal@dollarhouseclub.com" className="text-[#FF385C] underline">
-              legal@dollarhouseclub.com
+            If you have questions about how skill-based entry works, reach out to us at{" "}
+            <a href="mailto:support@dollarhouseclub.com" className="text-[#FF385C] underline">
+              support@dollarhouseclub.com
             </a>.
           </p>
         </Section>

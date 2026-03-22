@@ -51,7 +51,7 @@ export default function Footer() {
 
         <div className="mt-12 pt-6 border-t border-[#EBEBEB] flex flex-col sm:flex-row justify-between items-center gap-4">
           <p className="text-xs text-[#B0B0B0]">
-            &copy; {new Date().getFullYear()} Dollar House Club. Not a lottery. Skill-based entry required.
+            &copy; {new Date().getFullYear()} Dollar House Club. All rights reserved.
           </p>
           <div className="flex items-center gap-4">
             <SocialLink href="https://twitter.com" label="Twitter">

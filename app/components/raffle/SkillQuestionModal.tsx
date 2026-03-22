@@ -79,7 +79,7 @@ export default function SkillQuestionModal({ isOpen, onClose, onSuccess }: Skill
         </div>
         <h2 className="text-2xl font-bold text-[#222222] mb-2">Answer to participate</h2>
         <p className="text-sm text-[#717171]">
-          Dollar House Club uses skill-based entry to comply with sweepstakes regulations. Answer the question below to place your deposit.
+          Answer a quick question to confirm your entry and place your deposit.
         </p>
       </div>
 
