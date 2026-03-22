@@ -65,13 +65,13 @@ export default function SellerGuidePage() {
               listing is published.
             </Step>
             <Step number={6} title="Raffle Runs (30 Days)">
-              Depositors contribute USDC to your raffle pool. You can monitor progress from your
+              Depositors contribute PYUSD to your raffle pool. You can monitor progress from your
               seller dashboard in real time — total deposited, yield generated, number of depositors,
               and time remaining.
             </Step>
             <Step number={7} title="Outcome and Payout">
               If the raffle is fully funded, a winner is selected. You coordinate the property
-              transfer through our partner title company. You receive your payout in USDC upon
+              transfer through our partner title company. You receive your payout in PYUSD upon
               confirmed transfer. If the raffle is not fully funded, all deposits are returned to
               participants and you may relist.
             </Step>

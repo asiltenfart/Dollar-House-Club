@@ -32,8 +32,8 @@ export default function SkillBasedRulesPage() {
 
         <Section title="How It Works">
           <div className="flex flex-col gap-4">
-            <RuleStep number={1} title="Deposit USDC">
-              Deposit any amount of USDC into an active property raffle pool. Your deposit generates
+            <RuleStep number={1} title="Deposit PYUSD">
+              Deposit any amount of PYUSD into an active property raffle pool. Your deposit generates
               yield, and your share of the yield determines your proportional weight in the drawing.
             </RuleStep>
             <RuleStep number={2} title="Answer the Skill Question">

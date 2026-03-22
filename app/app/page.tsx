@@ -28,7 +28,7 @@ export default function HomePage() {
             <HowItWorksStep
               number={1}
               title="Deposit stablecoins"
-              description="Choose any active property raffle and deposit USDC. Your principal is safe and fully withdrawable at any time, no questions asked."
+              description="Choose any active property raffle and deposit PYUSD. Your principal is safe and fully withdrawable at any time, no questions asked."
               icon={
                 <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
                   <circle cx="14" cy="14" r="13" stroke="#FF385C" strokeWidth="1.5" />
@@ -39,7 +39,7 @@ export default function HomePage() {
             <HowItWorksStep
               number={2}
               title="Yield funds the prize"
-              description="Your USDC earns yield through lending protocols. All yield from all depositors goes into the raffle prize pool over 30 days."
+              description="Your PYUSD earns yield through lending protocols. All yield from all depositors goes into the raffle prize pool over 30 days."
               icon={
                 <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
                   <rect x="4" y="9" width="20" height="4" rx="2" stroke="#FF385C" strokeWidth="1.5" />

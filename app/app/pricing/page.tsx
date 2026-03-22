@@ -39,7 +39,7 @@ export default function PricingPage() {
             </div>
             <div className="border-t border-[#05CE78]/20 p-6">
               <ul className="flex flex-col gap-3">
-                <PricingItem included>Deposit any amount of USDC</PricingItem>
+                <PricingItem included>Deposit any amount of PYUSD</PricingItem>
                 <PricingItem included>Withdraw your full principal at any time</PricingItem>
                 <PricingItem included>Yield is automatically allocated to the prize pool</PricingItem>
                 <PricingItem included>Skill-question entry at no cost</PricingItem>
@@ -116,7 +116,7 @@ export default function PricingPage() {
         <div className="bg-[#F7F7F7] rounded-2xl p-8 text-center">
           <h2 className="font-bold text-[#222222] text-xl mb-2">No risk for participants</h2>
           <p className="text-sm text-[#717171] mb-6 max-w-md mx-auto">
-            Deposit USDC, let the yield work, and keep your full principal. The only thing you
+            Deposit PYUSD, let the yield work, and keep your full principal. The only thing you
             &quot;spend&quot; is the yield — and that goes to fund someone&apos;s dream home.
           </p>
           <Link

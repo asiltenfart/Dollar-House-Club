@@ -42,7 +42,7 @@ export default function TermsOfServicePage() {
         <Section title="3. How the Platform Works">
           <p>
             Dollar House Club allows property sellers to list verified real estate assets. Participants
-            deposit USDC stablecoins into raffle pools. The deposited principal generates yield through
+            deposit PYUSD stablecoins into raffle pools. The deposited principal generates yield through
             DeFi lending protocols. All yield is directed to the prize pool. At the conclusion of each
             raffle period, a winner is selected through a weighted, verifiable random process
             proportional to each participant&apos;s yield contribution — after answering a quick
@@ -65,7 +65,7 @@ export default function TermsOfServicePage() {
 
         <Section title="5. Deposits and Withdrawals">
           <p>
-            All deposits are made in USDC on the Flow blockchain. There is no minimum deposit amount,
+            All deposits are made in PYUSD on the Flow blockchain. There is no minimum deposit amount,
             though the Platform may set practical minimums for gas efficiency. You may withdraw your
             principal at any time during an active raffle. Upon withdrawal, your yield contribution is
             forfeited, and you will no longer be eligible for that raffle&apos;s drawing.
