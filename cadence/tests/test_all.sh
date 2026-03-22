@@ -336,6 +336,91 @@ assert_output_contains "Raffle #3 is auto-scheduled" "true" \
 
 echo ""
 
+# ── 13. Full Settlement Lifecycle ─────────────────────────────────────────
+echo -e "${YELLOW}Full Settlement Lifecycle Tests${NC}"
+
+# Set raffle duration to 60 seconds for quick expiry
+assert_success "Set raffle duration to 60 seconds" \
+    $FLOW transactions send cadence/transactions/set_raffle_duration.cdc 60.0 \
+    --signer "$EMULATOR_ACCOUNT" -n emulator
+
+# Create raffle #4 WITHOUT auto-scheduling (so we can test manual settlement)
+assert_success "Create raffle #4 (short duration, no auto-schedule)" \
+    $FLOW transactions send cadence/transactions/create_raffle_no_schedule.cdc \
+    "Settlement Test House" "Testing full lifecycle" 50000.0 \
+    --signer "$EMULATOR_ACCOUNT" -n emulator
+
+# Deposit from test-account
+assert_success "Deposit \$500 to raffle #4" \
+    $FLOW transactions send cadence/transactions/deposit.cdc 4 500.0 \
+    --signer "$TEST_ACCOUNT" -n emulator
+
+# Simulate yield on raffle #4
+assert_success "Simulate \$100 yield on raffle #4" \
+    $FLOW transactions send cadence/transactions/simulate_yield.cdc 4 100.0 \
+    --signer "$EMULATOR_ACCOUNT" -n emulator
+
+# Wait for raffle to expire (60s + buffer)
+echo -e "  ⏳ Waiting 65 seconds for raffle #4 to expire..."
+sleep 65
+
+# Force new blocks so the emulator updates its block timestamp
+# (emulator only advances timestamps when blocks are created)
+$FLOW transactions send cadence/transactions/setup_and_mint.cdc 1.0 \
+    --signer "$EMULATOR_ACCOUNT" -n emulator >/dev/null 2>&1
+sleep 2
+$FLOW transactions send cadence/transactions/setup_and_mint.cdc 1.0 \
+    --signer "$TEST_ACCOUNT" -n emulator >/dev/null 2>&1
+sleep 1
+
+# Verify raffle is expired
+assert_output_contains "Raffle #4 is expired" "true" \
+    $FLOW scripts execute cadence/scripts/is_raffle_expired.cdc 4 -n emulator
+
+# Harvest yield before commit
+assert_success "Harvest yield before commit" \
+    $FLOW transactions send cadence/transactions/harvest_yield.cdc 4 \
+    --signer "$EMULATOR_ACCOUNT" -n emulator
+
+# STEP 1: Commit raffle (requests VRF randomness)
+assert_success "Commit raffle #4 (request randomness)" \
+    $FLOW transactions send cadence/transactions/commit_raffle.cdc 4 \
+    --signer "$EMULATOR_ACCOUNT" -n emulator
+
+assert_output_contains "Raffle #4 is committed" "true" \
+    $FLOW scripts execute cadence/scripts/is_raffle_committed.cdc 4 -n emulator
+
+# STEP 2: Reveal winner (must be in next block — emulator auto-advances)
+assert_success "Reveal winner for raffle #4" \
+    $FLOW transactions send cadence/transactions/reveal_winner.cdc 4 \
+    --signer "$EMULATOR_ACCOUNT" -n emulator
+
+# Verify raffle is now resolved
+assert_output_contains "Raffle #4 is resolved with a winner" "winner" \
+    $FLOW scripts execute cadence/scripts/get_raffle.cdc 4 -n emulator
+
+# STEP 3: Claim principal (losers get their deposit back)
+assert_success "Claim principal from raffle #4" \
+    $FLOW transactions send cadence/transactions/claim_principal.cdc 4 \
+    --signer "$TEST_ACCOUNT" -n emulator
+
+# STEP 4: Claim prize (winner gets the yield)
+# Note: On emulator with one depositor, the sole depositor is the winner
+assert_success "Claim prize from raffle #4" \
+    $FLOW transactions send cadence/transactions/claim_prize.cdc 4 \
+    --signer "$TEST_ACCOUNT" -n emulator
+
+# Verify prize is claimed
+assert_output_contains "Prize is claimed" "prizeClaimed.*true" \
+    $FLOW scripts execute cadence/scripts/get_raffle.cdc 4 -n emulator
+
+# Restore raffle duration to 30 days
+assert_success "Restore raffle duration to 30 days" \
+    $FLOW transactions send cadence/transactions/set_raffle_duration.cdc 2592000.0 \
+    --signer "$EMULATOR_ACCOUNT" -n emulator
+
+echo ""
+
 # ── Summary ─────────────────────────────────────────────────────────────────
 echo -e "${YELLOW}═══ Results ═══${NC}"
 echo -e "  Total: $TOTAL"

@@ -261,6 +261,16 @@ access(all) fun main(raffleId: UInt64): Bool {
 }
 `;
 
+export const SET_RAFFLE_DURATION = `
+import "DollarHouseRaffle"
+
+transaction(duration: UFix64) {
+    prepare(signer: auth(BorrowValue) &Account) {
+        DollarHouseRaffle.setRaffleDuration(admin: signer, duration: duration)
+    }
+}
+`;
+
 export const IS_RAFFLE_COMMITTED = `
 import "DollarHouseRaffle"
 

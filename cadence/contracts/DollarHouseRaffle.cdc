@@ -47,8 +47,8 @@ access(all) contract DollarHouseRaffle {
     /// Pending randomness requests, keyed by raffle ID.
     access(self) let pendingRequests: @{UInt64: RandomConsumer.Request}
 
-    /// Duration of each raffle in seconds (30 days).
-    access(all) let raffleDuration: UFix64
+    /// Duration of each raffle in seconds (default: 30 days).
+    access(all) var raffleDuration: UFix64
 
     /// Minimum deposit amount in PYUSD.
     access(all) let minDeposit: UFix64
@@ -577,6 +577,18 @@ access(all) contract DollarHouseRaffle {
             return raffleRef.status == RaffleStatus.committed
         }
         return false
+    }
+
+    // ── Admin ────────────────────────────────────────────────────────────────
+
+    /// Set raffle duration (in seconds). Only the contract deployer can call this.
+    /// Useful for testing with short durations. Only affects newly created raffles.
+    access(all) fun setRaffleDuration(admin: auth(BorrowValue) &Account, duration: UFix64) {
+        pre {
+            admin.address == self.account.address: "Only the contract deployer can change duration"
+            duration >= 60.0: "Duration must be at least 60 seconds"
+        }
+        self.raffleDuration = duration
     }
 
     // ── Init ─────────────────────────────────────────────────────────────────
