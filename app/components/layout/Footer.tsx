@@ -1,5 +1,6 @@
 import React from "react";
 import Link from "next/link";
+import Image from "next/image";
 
 export default function Footer() {
   return (
@@ -9,14 +10,7 @@ export default function Footer() {
           {/* Brand */}
           <div className="md:col-span-1">
             <Link href="/" className="flex items-center gap-2 mb-4">
-              <div
-                className="w-8 h-8 rounded-[8px] flex items-center justify-center shrink-0"
-                style={{ background: "var(--gradient-hero)" }}
-              >
-                <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
-                  <path d="M9 2L16 8V16H12V11H6V16H2V8L9 2Z" fill="white" />
-                </svg>
-              </div>
+              <Image src="/logo.png" alt="Dollar House Club" width={32} height={32} className="w-8 h-8 rounded-[8px] shrink-0" />
               <span className="text-base font-bold text-[#222222]">Dollar House Club</span>
             </Link>
             <p className="text-sm text-[#717171] leading-relaxed">

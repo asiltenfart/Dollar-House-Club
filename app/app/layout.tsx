@@ -19,6 +19,11 @@ export const metadata: Metadata = {
   title: "Dollar House Club — Win a Home Through Real Estate Raffles",
   description:
     "Deposit stablecoins into property raffles. The yield funds the prize — you could win a house. No speculation, just yield-powered real estate.",
+  icons: {
+    icon: "/logo.png",
+    shortcut: "/logo.png",
+    apple: "/logo.png",
+  },
 };
 
 export default function RootLayout({

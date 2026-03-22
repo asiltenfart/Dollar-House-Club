@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { useAuth } from "@/lib/auth/AuthContext";
 import { useDataSource } from "@/lib/data/DataSourceContext";
 import AuthModal from "@/components/ui/AuthModal";
@@ -43,11 +44,7 @@ export default function Navbar() {
             className="flex items-center gap-2 shrink-0"
             aria-label="Dollar House Club home"
           >
-            <div className="w-8 h-8 rounded-[8px] flex items-center justify-center" style={{ background: "var(--gradient-hero)" }}>
-              <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
-                <path d="M9 2L16 8V16H12V11H6V16H2V8L9 2Z" fill="white" />
-              </svg>
-            </div>
+            <Image src="/logo.png" alt="Dollar House Club" width={32} height={32} className="w-8 h-8 rounded-[8px]" />
             <span className="text-base font-bold text-[#222222] hidden sm:block" style={{ letterSpacing: "-0.01em" }}>
               Dollar House Club
             </span>
