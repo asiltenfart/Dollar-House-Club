@@ -183,6 +183,21 @@ access(all) fun main(): [UInt64] {
 }
 `;
 
+export const GET_ALL_RAFFLES = `
+import "DollarHouseRaffle"
+
+access(all) fun main(): [DollarHouseRaffle.RaffleData] {
+    let ids = DollarHouseRaffle.getAllRaffleIds()
+    let results: [DollarHouseRaffle.RaffleData] = []
+    for id in ids {
+        if let raffle = DollarHouseRaffle.getRaffle(raffleId: id) {
+            results.append(raffle)
+        }
+    }
+    return results
+}
+`;
+
 export const GET_DEPOSIT = `
 import "DollarHouseRaffle"
 

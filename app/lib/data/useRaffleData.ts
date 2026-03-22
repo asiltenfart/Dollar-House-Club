@@ -1,95 +1,89 @@
 "use client";
 
-import { useEffect, useState, useMemo } from "react";
-import { useFlowQuery } from "@onflow/kit";
+import { useMemo, useState, useEffect } from "react";
 import { useDataSource } from "./DataSourceContext";
 import { chainRaffleToFrontend, type ChainRaffleData } from "./adapter";
 import { MOCK_RAFFLES, getRaffle as getMockRaffle, getMockDepositsForRaffle } from "@/lib/api/mock";
-import { GET_ALL_RAFFLE_IDS, GET_RAFFLE } from "@/lib/flow/cadence";
+import { GET_ALL_RAFFLES, GET_RAFFLE } from "@/lib/flow/cadence";
 import type { Raffle, Deposit } from "@/types";
 
 // ── Fetch all raffles (mock or on-chain) ────────────────────────────────────
 
 export function useRaffles(): { raffles: Raffle[]; isLoading: boolean } {
-  const { isMock } = useDataSource();
-
-  // On-chain: get all raffle IDs
-  const { data: raffleIds, isLoading: idsLoading } = useFlowQuery({
-    cadence: GET_ALL_RAFFLE_IDS,
-    query: { enabled: !isMock, staleTime: 5000 },
-  });
-
-  // On-chain: fetch each raffle's data
+  const { isMock, isHydrated } = useDataSource();
   const [chainRaffles, setChainRaffles] = useState<Raffle[]>([]);
-  const [chainLoading, setChainLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
-    if (isMock || !raffleIds || !Array.isArray(raffleIds)) {
-      setChainRaffles([]);
-      return;
-    }
+    if (!isHydrated || isMock) return;
 
     let cancelled = false;
-    setChainLoading(true);
+    setIsLoading(true);
 
-    // We need to fetch each raffle individually since useFlowQuery can't
-    // be called in a loop. Use fcl.query directly.
     import("@onflow/fcl").then(async (fcl) => {
       try {
-        const results: Raffle[] = [];
-        for (const id of raffleIds as string[]) {
-          const data = await fcl.query({
-            cadence: GET_RAFFLE,
-            args: (arg: typeof fcl.arg, t: typeof fcl.t) => [
-              arg(String(id), t.UInt64),
-            ],
-          });
-          if (data && !cancelled) {
-            results.push(chainRaffleToFrontend(data as ChainRaffleData));
-          }
-        }
-        if (!cancelled) {
-          setChainRaffles(results);
+        const data = await fcl.query({ cadence: GET_ALL_RAFFLES });
+        if (!cancelled && Array.isArray(data)) {
+          setChainRaffles((data as ChainRaffleData[]).map(chainRaffleToFrontend));
         }
       } catch (err) {
         console.error("Failed to fetch on-chain raffles:", err);
       } finally {
-        if (!cancelled) setChainLoading(false);
+        if (!cancelled) setIsLoading(false);
       }
     });
 
     return () => { cancelled = true; };
-  }, [isMock, raffleIds]);
+  }, [isMock]);
 
   if (isMock) {
     return { raffles: MOCK_RAFFLES, isLoading: false };
   }
 
-  return {
-    raffles: chainRaffles,
-    isLoading: idsLoading || chainLoading,
-  };
+  return { raffles: chainRaffles, isLoading };
 }
 
 // ── Fetch single raffle by ID (mock or on-chain) ────────────────────────────
 
 export function useRaffleById(id: string): { raffle: Raffle | null; isLoading: boolean } {
   const { isMock } = useDataSource();
+  const [chainRaffle, setChainRaffle] = useState<Raffle | null>(null);
+  const [isLoading, setIsLoading] = useState(!isMock);
 
-  // On-chain query
-  const raffleId = parseInt(id.replace("raffle-", ""), 10) || parseInt(id, 10);
-  const { data, isLoading } = useFlowQuery({
-    cadence: GET_RAFFLE,
-    args: (arg, t) => [arg(String(raffleId), t.UInt64)],
-    query: { enabled: !isMock && !isNaN(raffleId), staleTime: 5000 },
-  });
+  const raffleId = parseRaffleId(id);
+
+  useEffect(() => {
+    if (isMock || isNaN(raffleId)) return;
+
+    let cancelled = false;
+    setIsLoading(true);
+
+    import("@onflow/fcl").then(async (fcl) => {
+      try {
+        const data = await fcl.query({
+          cadence: GET_RAFFLE,
+          args: (arg: typeof fcl.arg, t: typeof fcl.t) => [
+            arg(String(raffleId), t.UInt64),
+          ],
+        });
+        if (!cancelled && data) {
+          setChainRaffle(chainRaffleToFrontend(data as ChainRaffleData));
+        }
+      } catch (err) {
+        console.error("Failed to fetch on-chain raffle:", err);
+      } finally {
+        if (!cancelled) setIsLoading(false);
+      }
+    });
+
+    return () => { cancelled = true; };
+  }, [isMock, raffleId]);
 
   if (isMock) {
     return { raffle: getMockRaffle(id) ?? null, isLoading: false };
   }
 
-  const raffle = data ? chainRaffleToFrontend(data as ChainRaffleData) : null;
-  return { raffle, isLoading };
+  return { raffle: chainRaffle, isLoading };
 }
 
 // ── Fetch deposits for a raffle (mock or on-chain) ──────────────────────────
@@ -101,8 +95,7 @@ export function useRaffleDeposits(id: string): { deposits: Deposit[]; isLoading:
     return { deposits: getMockDepositsForRaffle(id), isLoading: false };
   }
 
-  // On-chain deposits are handled separately by the DepositCard
-  // which already uses useDeposit/useAllDeposits hooks directly.
+  // On-chain deposits are handled by DepositCard's own hooks
   return { deposits: [], isLoading: false };
 }
 

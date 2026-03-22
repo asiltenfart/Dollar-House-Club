@@ -1,7 +1,8 @@
 "use client";
 
-import { useFlowQuery, useFlowMutate, useFlowCurrentUser } from "@onflow/kit";
-import * as fcl from "@onflow/fcl";
+// NO top-level @onflow imports — all FCL usage is lazy to prevent SSR stalls.
+
+import { useState, useEffect, useCallback } from "react";
 import {
   MINT_PYUSD,
   CREATE_RAFFLE,
@@ -19,220 +20,239 @@ import {
   IS_RAFFLE_COMMITTED,
 } from "./cadence";
 
-// ── Re-export auth hook ──────────────────────────────────────────────────────
+// ── Lazy FCL accessor ──────────────────────────────────────────────────────
 
-export { useFlowCurrentUser } from "@onflow/kit";
+async function getFcl() {
+  return await import("@onflow/fcl");
+}
 
-// ── Query Hooks ──────────────────────────────────────────────────────────────
+// ── Lightweight client-only query hook ──────────────────────────────────────
+
+function useClientQuery<T>(opts: {
+  cadence: string;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  args?: (arg: any, t: any) => any[];
+  enabled?: boolean;
+}) {
+  const [data, setData] = useState<T | undefined>(undefined);
+  const [isLoading, setIsLoading] = useState(false);
+
+  const enabled = opts.enabled ?? true;
+  const argsKey = JSON.stringify(opts.args?.toString());
+
+  const refetch = useCallback(async () => {
+    if (!enabled) return;
+    setIsLoading(true);
+    try {
+      const fcl = await getFcl();
+      const result = await fcl.query({
+        cadence: opts.cadence,
+        args: opts.args,
+      });
+      setData(result as T);
+    } catch (err) {
+      console.error("Query error:", err);
+    } finally {
+      setIsLoading(false);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [opts.cadence, argsKey, enabled]);
+
+  useEffect(() => {
+    refetch();
+  }, [refetch]);
+
+  return { data, isLoading, refetch };
+}
+
+// ── Lightweight client-only mutate helper ───────────────────────────────────
+
+function useClientMutate() {
+  const [isPending, setIsPending] = useState(false);
+
+  const mutateAsync = useCallback(async (opts: {
+    cadence: string;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    args?: (arg: any, t: any) => any[];
+    limit?: number;
+  }) => {
+    setIsPending(true);
+    try {
+      const fcl = await getFcl();
+      const txId = await fcl.mutate({
+        cadence: opts.cadence,
+        args: opts.args,
+        limit: opts.limit ?? 1000,
+      });
+      await fcl.tx(txId).onceSealed();
+      return txId;
+    } finally {
+      setIsPending(false);
+    }
+  }, []);
+
+  return { mutateAsync, isPending };
+}
+
+// ── Current user hook ───────────────────────────────────────────────────────
+
+export function useFlowCurrentUser() {
+  const [currentUser, setCurrentUser] = useState<{
+    addr?: string | null;
+    loggedIn?: boolean;
+  } | null>(null);
+
+  useEffect(() => {
+    getFcl().then((fcl) => {
+      fcl.currentUser.subscribe(setCurrentUser);
+    });
+  }, []);
+
+  return currentUser;
+}
+
+// ── Query Hooks ─────────────────────────────────────────────────────────────
 
 export function usePYUSDBalance(address: string | null) {
-  return useFlowQuery({
+  return useClientQuery<string>({
     cadence: GET_PYUSD_BALANCE,
     args: (arg, t) => [arg(address ?? "", t.Address)],
-    query: {
-      enabled: !!address,
-      staleTime: 5000,
-    },
+    enabled: !!address,
   });
 }
 
 export function useRaffle(raffleId: number | null) {
-  return useFlowQuery({
+  return useClientQuery({
     cadence: GET_RAFFLE,
     args: (arg, t) => [arg(String(raffleId), t.UInt64)],
-    query: {
-      enabled: raffleId != null,
-      staleTime: 5000,
-    },
+    enabled: raffleId != null,
   });
 }
 
 export function useAllRaffleIds() {
-  return useFlowQuery({
-    cadence: GET_ALL_RAFFLE_IDS,
-    query: { staleTime: 5000 },
-  });
+  return useClientQuery<string[]>({ cadence: GET_ALL_RAFFLE_IDS });
 }
 
 export function useDeposit(raffleId: number | null, depositor: string | null) {
-  return useFlowQuery({
+  return useClientQuery({
     cadence: GET_DEPOSIT,
     args: (arg, t) => [
       arg(String(raffleId ?? 0), t.UInt64),
       arg(depositor ?? "", t.Address),
     ],
-    query: {
-      enabled: raffleId != null && !!depositor,
-      staleTime: 5000,
-    },
+    enabled: raffleId != null && !!depositor,
   });
 }
 
 export function useAllDeposits(raffleId: number | null) {
-  return useFlowQuery({
+  return useClientQuery({
     cadence: GET_ALL_DEPOSITS,
     args: (arg, t) => [arg(String(raffleId), t.UInt64)],
-    query: {
-      enabled: raffleId != null,
-      staleTime: 5000,
-    },
+    enabled: raffleId != null,
   });
 }
 
 export function useIsRaffleExpired(raffleId: number | null) {
-  return useFlowQuery({
+  return useClientQuery<boolean>({
     cadence: IS_RAFFLE_EXPIRED,
     args: (arg, t) => [arg(String(raffleId), t.UInt64)],
-    query: {
-      enabled: raffleId != null,
-      staleTime: 10000,
-    },
+    enabled: raffleId != null,
   });
 }
 
 export function useIsRaffleCommitted(raffleId: number | null) {
-  return useFlowQuery({
+  return useClientQuery<boolean>({
     cadence: IS_RAFFLE_COMMITTED,
     args: (arg, t) => [arg(String(raffleId), t.UInt64)],
-    query: {
-      enabled: raffleId != null,
-      staleTime: 5000,
-    },
+    enabled: raffleId != null,
   });
 }
 
-// ── Mutation Hooks ───────────────────────────────────────────────────────────
+// ── Mutation Hooks ──────────────────────────────────────────────────────────
 
 export function useMintPYUSD() {
-  const { mutateAsync, ...rest } = useFlowMutate();
-
+  const { mutateAsync, isPending } = useClientMutate();
   const mintPYUSD = async (amount: number) => {
-    const txId = await mutateAsync({
+    return await mutateAsync({
       cadence: MINT_PYUSD,
-      args: (arg: typeof fcl.arg, t: typeof fcl.t) => [
-        arg(amount.toFixed(8), t.UFix64),
-      ],
-      limit: 1000,
+      args: (arg, t) => [arg(amount.toFixed(8), t.UFix64)],
     });
-    await fcl.tx(txId).onceSealed();
-    return txId;
   };
-
-  return { mintPYUSD, ...rest };
+  return { mintPYUSD, isPending };
 }
 
 export function useCreateRaffle() {
-  const { mutateAsync, ...rest } = useFlowMutate();
-
-  const createRaffle = async (
-    title: string,
-    description: string,
-    targetValue: number
-  ) => {
-    const txId = await mutateAsync({
+  const { mutateAsync, isPending } = useClientMutate();
+  const createRaffle = async (title: string, description: string, targetValue: number) => {
+    return await mutateAsync({
       cadence: CREATE_RAFFLE,
-      args: (arg: typeof fcl.arg, t: typeof fcl.t) => [
+      args: (arg, t) => [
         arg(title, t.String),
         arg(description, t.String),
         arg(targetValue.toFixed(8), t.UFix64),
       ],
-      limit: 1000,
     });
-    await fcl.tx(txId).onceSealed();
-    return txId;
   };
-
-  return { createRaffle, ...rest };
+  return { createRaffle, isPending };
 }
 
 export function useDepositToRaffle() {
-  const { mutateAsync, ...rest } = useFlowMutate();
-
+  const { mutateAsync, isPending } = useClientMutate();
   const depositToRaffle = async (raffleId: number, amount: number) => {
-    const txId = await mutateAsync({
+    return await mutateAsync({
       cadence: DEPOSIT_TO_RAFFLE,
-      args: (arg: typeof fcl.arg, t: typeof fcl.t) => [
+      args: (arg, t) => [
         arg(String(raffleId), t.UInt64),
         arg(amount.toFixed(8), t.UFix64),
       ],
-      limit: 1000,
     });
-    await fcl.tx(txId).onceSealed();
-    return txId;
   };
-
-  return { depositToRaffle, ...rest };
+  return { depositToRaffle, isPending };
 }
 
 export function useWithdrawFromRaffle() {
-  const { mutateAsync, ...rest } = useFlowMutate();
-
+  const { mutateAsync, isPending } = useClientMutate();
   const withdrawFromRaffle = async (raffleId: number) => {
-    const txId = await mutateAsync({
+    return await mutateAsync({
       cadence: WITHDRAW_FROM_RAFFLE,
-      args: (arg: typeof fcl.arg, t: typeof fcl.t) => [
-        arg(String(raffleId), t.UInt64),
-      ],
-      limit: 1000,
+      args: (arg, t) => [arg(String(raffleId), t.UInt64)],
     });
-    await fcl.tx(txId).onceSealed();
-    return txId;
   };
-
-  return { withdrawFromRaffle, ...rest };
+  return { withdrawFromRaffle, isPending };
 }
 
 export function useCommitRaffle() {
-  const { mutateAsync, ...rest } = useFlowMutate();
-
+  const { mutateAsync, isPending } = useClientMutate();
   const commitRaffle = async (raffleId: number) => {
-    const txId = await mutateAsync({
+    return await mutateAsync({
       cadence: COMMIT_RAFFLE,
-      args: (arg: typeof fcl.arg, t: typeof fcl.t) => [
-        arg(String(raffleId), t.UInt64),
-      ],
-      limit: 1000,
+      args: (arg, t) => [arg(String(raffleId), t.UInt64)],
     });
-    await fcl.tx(txId).onceSealed();
-    return txId;
   };
-
-  return { commitRaffle, ...rest };
+  return { commitRaffle, isPending };
 }
 
 export function useRevealWinner() {
-  const { mutateAsync, ...rest } = useFlowMutate();
-
+  const { mutateAsync, isPending } = useClientMutate();
   const revealWinner = async (raffleId: number) => {
-    const txId = await mutateAsync({
+    return await mutateAsync({
       cadence: REVEAL_WINNER,
-      args: (arg: typeof fcl.arg, t: typeof fcl.t) => [
-        arg(String(raffleId), t.UInt64),
-      ],
-      limit: 1000,
+      args: (arg, t) => [arg(String(raffleId), t.UInt64)],
     });
-    await fcl.tx(txId).onceSealed();
-    return txId;
   };
-
-  return { revealWinner, ...rest };
+  return { revealWinner, isPending };
 }
 
 export function useSimulateYield() {
-  const { mutateAsync, ...rest } = useFlowMutate();
-
+  const { mutateAsync, isPending } = useClientMutate();
   const simulateYield = async (raffleId: number, yieldAmount: number) => {
-    const txId = await mutateAsync({
+    return await mutateAsync({
       cadence: SIMULATE_YIELD,
-      args: (arg: typeof fcl.arg, t: typeof fcl.t) => [
+      args: (arg, t) => [
         arg(String(raffleId), t.UInt64),
         arg(yieldAmount.toFixed(8), t.UFix64),
       ],
-      limit: 1000,
     });
-    await fcl.tx(txId).onceSealed();
-    return txId;
   };
-
-  return { simulateYield, ...rest };
+  return { simulateYield, isPending };
 }

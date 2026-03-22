@@ -1,9 +1,10 @@
 "use client";
 
-import { FlowProvider as FlowKitProvider } from "@onflow/kit";
+import React, { useState, useEffect, type ReactNode } from "react";
 
-// Inline flow.json contract addresses for FCL resolution.
-// This avoids importing from outside the Next.js app directory.
+// All config is defined statically — no heavy imports at module level.
+// @onflow/kit is loaded lazily on the client to avoid SSR stalls.
+
 const flowJSON = {
   contracts: {
     DummyPYUSD: { source: "./cadence/contracts/DummyPYUSD.cdc" },
@@ -95,14 +96,31 @@ const flowConfig = {
     "https://fcl-discovery.onflow.org/testnet/authn",
 };
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type FlowProviderComponent = React.ComponentType<any>;
+
 export default function FlowProviderWrapper({
   children,
 }: {
-  children: React.ReactNode;
+  children: ReactNode;
 }) {
+  const [Kit, setKit] = useState<FlowProviderComponent | null>(null);
+
+  useEffect(() => {
+    import("@onflow/kit").then((mod) => {
+      setKit(() => mod.FlowProvider);
+    });
+  }, []);
+
+  // During SSR or before kit loads, render children without the provider.
+  // This prevents @onflow/fcl from initializing during SSR (~30s timeout).
+  if (!Kit) {
+    return <>{children}</>;
+  }
+
   return (
-    <FlowKitProvider config={flowConfig} flowJson={flowJSON}>
+    <Kit config={flowConfig} flowJson={flowJSON}>
       {children}
-    </FlowKitProvider>
+    </Kit>
   );
 }

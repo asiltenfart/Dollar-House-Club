@@ -8,7 +8,6 @@ import React, {
   useEffect,
 } from "react";
 import type { AuthUser, UserProfile } from "@/types";
-import * as fcl from "@onflow/fcl";
 
 // ── Mode detection ──────────────────────────────────────────────────────────
 const FLOW_NETWORK = process.env.NEXT_PUBLIC_FLOW_NETWORK || "emulator";
@@ -62,7 +61,12 @@ function buildProfile(
   };
 }
 
-// ── Magic helpers (lazy-loaded only in testnet mode) ────────────────────────
+// ── Lazy loaders (avoid top-level imports that stall SSR) ───────────────────
+
+async function getFcl() {
+  const fcl = await import("@onflow/fcl");
+  return fcl;
+}
 
 async function getMagicModules() {
   const { getMagic, getMagicFlow } = await import("@/lib/magic");
@@ -80,19 +84,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (!isEmulatorMode) return;
 
-    const unsub = fcl.currentUser.subscribe((currentUser: { addr?: string | null; loggedIn?: boolean }) => {
-      if (currentUser?.loggedIn && currentUser.addr) {
-        setUser({
-          profile: buildProfile(currentUser.addr, currentUser.addr),
-          isAuthenticated: true,
-        });
-      } else {
-        setUser(null);
-      }
-      setIsLoading(false);
+    let unsub: (() => void) | undefined;
+
+    getFcl().then((fcl) => {
+      unsub = fcl.currentUser.subscribe((currentUser: { addr?: string | null; loggedIn?: boolean }) => {
+        if (currentUser?.loggedIn && currentUser.addr) {
+          setUser({
+            profile: buildProfile(currentUser.addr, currentUser.addr),
+            isAuthenticated: true,
+          });
+        } else {
+          setUser(null);
+        }
+        setIsLoading(false);
+      });
     });
 
-    return () => unsub();
+    return () => { unsub?.(); };
   }, []);
 
   // ── Testnet mode: check existing Magic session on mount ───────────────
@@ -138,11 +146,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   // ── Sign in ───────────────────────────────────────────────────────────
   const signIn = useCallback(async (email?: string) => {
     if (isEmulatorMode) {
-      // FCL Dev Wallet handles everything in a popup
+      const fcl = await getFcl();
       await fcl.authenticate();
       setShowAuthModal(false);
     } else {
-      // Magic Link email OTP
       if (!email) throw new Error("Email required for testnet sign-in");
       const { getMagic, getMagicFlow } = await getMagicModules();
       const magic = getMagic();
@@ -171,6 +178,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   // ── Sign out ──────────────────────────────────────────────────────────
   const signOut = useCallback(async () => {
     if (isEmulatorMode) {
+      const fcl = await getFcl();
       await fcl.unauthenticate();
     } else {
       try {
