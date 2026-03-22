@@ -58,6 +58,10 @@ export default function DepositCard({
       setAmountError("Minimum deposit is $10.");
       return;
     }
+    if (pyusdBalance != null && val > Number(pyusdBalance)) {
+      setAmountError(`Insufficient balance. You have ${formatUSDDecimal(Number(pyusdBalance))}.`);
+      return;
+    }
     setAmountError("");
 
     if (!hasPassedSkill && !userDeposit) {

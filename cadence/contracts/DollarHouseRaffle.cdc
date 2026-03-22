@@ -459,7 +459,7 @@ access(all) contract DollarHouseRaffle {
         self.consumer <- RandomConsumer.createConsumer()
         self.pendingRequests <- {}
 
-        // TESTING: 60 seconds. Change to 2592000.0 (30 days) for production.
-        self.raffleDuration = 60.0
+        // 30 days in seconds
+        self.raffleDuration = 2592000.0
     }
 }

@@ -31,7 +31,7 @@ export default function PropertyGallery({ images, title }: PropertyGalleryProps)
 
   return (
     <div
-      className="relative w-full overflow-hidden bg-[#F7F7F7] group md:rounded-[16px]"
+      className="relative z-0 w-full overflow-hidden bg-[#F7F7F7] group md:rounded-[16px]"
       style={{ height: "400px" }}
       onTouchStart={handleTouchStart}
     >
@@ -40,7 +40,7 @@ export default function PropertyGallery({ images, title }: PropertyGalleryProps)
         <div
           key={src}
           className="absolute inset-0 transition-opacity duration-300"
-          style={{ opacity: i === current ? 1 : 0, zIndex: i === current ? 1 : 0 }}
+          style={{ opacity: i === current ? 1 : 0 }}
         >
           {!loaded[i] && (
             <div className="absolute inset-0 bg-[#F7F7F7] flex items-center justify-center">
