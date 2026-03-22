@@ -8,7 +8,8 @@ import PropertyGallery from "@/components/raffle/PropertyGallery";
 import DepositCard from "@/components/raffle/DepositCard";
 import WinnerReveal from "@/components/raffle/WinnerReveal";
 import { RaffleStatusBadge } from "@/components/ui/Badge";
-import { formatUSD, formatUSDDecimal, formatDate, formatTimeLeft, formatPercent } from "@/lib/utils/format";
+import { formatUSD, formatUSDDecimal, formatDate, formatPercent } from "@/lib/utils/format";
+import LiveCountdown from "@/components/ui/LiveCountdown";
 import Link from "next/link";
 import RaffleSettlement from "@/components/raffle/RaffleSettlement";
 
@@ -124,7 +125,7 @@ export default function RaffleDetailPage({ params }: PageProps) {
                 </span>
                 {raffle.status === "active" && (
                   <span className="text-sm font-semibold text-[#E07912]">
-                    Ends in {formatTimeLeft(raffle.expiresAt)}
+                    Ends in <LiveCountdown expiresAt={raffle.expiresAt} isActive={true} />
                   </span>
                 )}
               </div>
@@ -229,7 +230,7 @@ export default function RaffleDetailPage({ params }: PageProps) {
               <RaffleStatusBadge status={raffle.status} />
               {raffle.status === "active" && (
                 <span className="text-xs font-semibold text-[#E07912]">
-                  {(() => { const t = formatTimeLeft(raffle.expiresAt); return t === "Expired" ? t : `${t} left`; })()}
+                  <LiveCountdown expiresAt={raffle.expiresAt} isActive={true} suffix=" left" />
                 </span>
               )}
             </div>

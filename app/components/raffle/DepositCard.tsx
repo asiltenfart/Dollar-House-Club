@@ -2,7 +2,7 @@
 
 import React, { useState, useRef, useEffect } from "react";
 import type { Raffle, Deposit } from "@/types";
-import { formatUSD, formatUSDDecimal, formatPercent, formatTimeLeft, calcPercent } from "@/lib/utils/format";
+import { formatUSD, formatUSDDecimal, formatPercent, formatTimeLeft, formatYieldTicker, calcPercent } from "@/lib/utils/format";
 import ProgressBar from "@/components/ui/ProgressBar";
 import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
@@ -11,7 +11,7 @@ import SkillQuestionModal from "./SkillQuestionModal";
 import { useAuth } from "@/lib/auth/AuthContext";
 import { useToast } from "@/components/ui/Toast";
 import Confetti from "./Confetti";
-import { useDepositToRaffle, useWithdrawFromRaffle, useClaimPrincipal, useClaimPrize, usePYUSDBalance } from "@/lib/flow/hooks";
+import { useDepositToRaffle, useWithdrawFromRaffle, useClaimPrincipal, useClaimPrize, usePYUSDBalance, usePendingYield } from "@/lib/flow/hooks";
 
 interface DepositCardProps {
   raffle: Raffle;
@@ -53,7 +53,8 @@ export default function DepositCard({
   // Real-time ticking yield: 500% APY on totalDeposited
   const APY_RATE = 5.0;
   const SECONDS_PER_YEAR = 31536000;
-  const yieldPerSecond = raffle.totalDeposited > 0 ? (raffle.totalDeposited * APY_RATE) / SECONDS_PER_YEAR : 0;
+  const TICK_MS = 100; // tick every 100ms for smooth animation
+  const yieldPerTick = raffle.totalDeposited > 0 ? (raffle.totalDeposited * APY_RATE * TICK_MS) / (SECONDS_PER_YEAR * 1000) : 0;
 
   const [liveYield, setLiveYield] = useState(raffle.totalYieldEarned);
 
@@ -62,12 +63,23 @@ export default function DepositCard({
   }, [raffle.totalYieldEarned]);
 
   useEffect(() => {
-    if (yieldPerSecond <= 0 || raffle.status !== "active") return;
+    if (yieldPerTick <= 0 || raffle.status !== "active") return;
     const interval = setInterval(() => {
-      setLiveYield((prev) => prev + yieldPerSecond);
+      setLiveYield((prev) => prev + yieldPerTick);
+    }, TICK_MS);
+    return () => clearInterval(interval);
+  }, [yieldPerTick, raffle.status]);
+
+  // Live countdown timer
+  const [timeLeft, setTimeLeft] = useState(formatTimeLeft(raffle.expiresAt));
+
+  useEffect(() => {
+    if (raffle.status !== "active") return;
+    const interval = setInterval(() => {
+      setTimeLeft(formatTimeLeft(raffle.expiresAt));
     }, 1000);
     return () => clearInterval(interval);
-  }, [yieldPerSecond, raffle.status]);
+  }, [raffle.expiresAt, raffle.status]);
 
   const percent = calcPercent(liveYield, raffle.targetValueUSD);
   const isActive = raffle.status === "active";
@@ -156,7 +168,7 @@ export default function DepositCard({
           </svg>
           Your Listing
         </div>
-        <RaffleStats raffle={raffle} percent={percent} depositorCount={depositorCount} liveYield={liveYield} />
+        <RaffleStats raffle={raffle} percent={percent} depositorCount={depositorCount} liveYield={liveYield} timeLeft={timeLeft} />
       </div>
     );
   }
@@ -204,12 +216,12 @@ export default function DepositCard({
             {formatUSD(raffle.targetValueUSD)}
           </p>
           <ProgressBar percent={percent} height={8} showLabel />
-          <p className="text-sm text-[#717171] mt-2">
-            {formatUSD(liveYield)} raised in yield ({percent}%)
+          <p className="text-sm text-[#717171] mt-2 font-mono tabular-nums">
+            {formatYieldTicker(liveYield)} raised in yield ({percent}%)
           </p>
         </div>
 
-        <RaffleStats raffle={raffle} percent={percent} depositorCount={depositorCount} liveYield={liveYield} />
+        <RaffleStats raffle={raffle} percent={percent} depositorCount={depositorCount} liveYield={liveYield} timeLeft={timeLeft} />
 
         {isActive && (
           <>
@@ -381,7 +393,7 @@ export default function DepositCard({
   );
 }
 
-function RaffleStats({ raffle, percent, depositorCount, liveYield }: { raffle: Raffle; percent: number; depositorCount: number; liveYield: number }) {
+function RaffleStats({ raffle, percent, depositorCount, liveYield, timeLeft }: { raffle: Raffle; percent: number; depositorCount: number; liveYield: number; timeLeft: string }) {
   return (
     <div className="grid grid-cols-2 gap-4">
       <StatBox
@@ -391,12 +403,14 @@ function RaffleStats({ raffle, percent, depositorCount, liveYield }: { raffle: R
       />
       <StatBox
         label="Time Left"
-        value={raffle.status === "active" ? formatTimeLeft(raffle.expiresAt) : "Ended"}
+        value={raffle.status === "active" ? timeLeft : "Ended"}
+        mono={raffle.status === "active"}
       />
       <StatBox
         label="Total Yield"
-        value={formatUSDDecimal(liveYield)}
+        value={formatYieldTicker(liveYield)}
         color="yield"
+        mono
       />
       <StatBox
         label="% Funded"
@@ -412,11 +426,13 @@ function StatBox({
   value,
   highlight = false,
   color = "default",
+  mono = false,
 }: {
   label: string;
   value: string;
   highlight?: boolean;
   color?: "default" | "yield" | "success";
+  mono?: boolean;
 }) {
   const valueColor = {
     default: "#222222",
@@ -428,8 +444,8 @@ function StatBox({
     <div className="bg-[#F7F7F7] rounded-[8px] p-3">
       <p className="text-xs text-[#717171] mb-1">{label}</p>
       <p
-        className="text-base font-bold"
-        style={{ color: highlight ? "#FF385C" : valueColor }}
+        className={`text-base font-bold ${mono ? "font-mono tabular-nums" : ""}`}
+        style={{ color: highlight ? "#FF385C" : valueColor, fontSize: mono ? "14px" : undefined }}
       >
         {value}
       </p>

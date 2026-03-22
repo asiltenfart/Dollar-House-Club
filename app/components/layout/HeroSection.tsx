@@ -4,8 +4,9 @@ import React from "react";
 import Link from "next/link";
 import Image from "next/image";
 import type { Raffle } from "@/types";
-import { formatTimeLeft, calcPercent } from "@/lib/utils/format";
+import { calcPercent } from "@/lib/utils/format";
 import { getAvatar } from "@/lib/utils/avatars";
+import LiveCountdown from "@/components/ui/LiveCountdown";
 
 interface HeroSectionProps {
   raffles: Raffle[];
@@ -204,7 +205,7 @@ function FeaturedCard({ raffle }: { raffle: Raffle }) {
 
         {/* Stats row */}
         <div className="flex items-center gap-3 mt-4 text-sm text-[#717171]">
-          <ClockLabel text={(() => { const t = formatTimeLeft(raffle.expiresAt); return t === "Expired" ? t : `${t} left`; })()}  />
+          <ClockLabel text={<LiveCountdown expiresAt={raffle.expiresAt} isActive={raffle.status === "active"} suffix=" left" />}  />
           <span className="text-[#D0D0D0]">&bull;</span>
           <span>
             <strong className="text-[#1A1A1A]">{percent}%</strong> funded
@@ -268,7 +269,7 @@ function SmallCard({ raffle }: { raffle: Raffle }) {
 
         {/* Stats */}
         <div className="flex items-center gap-1.5 mt-2 text-xs text-[#717171] ml-8">
-          <ClockLabel text={(() => { const t = formatTimeLeft(raffle.expiresAt); return t === "Expired" ? t : `${t} left`; })()} small />
+          <ClockLabel text={<LiveCountdown expiresAt={raffle.expiresAt} isActive={raffle.status === "active"} suffix=" left" />} small />
           <span className="text-[#D0D0D0]">&bull;</span>
           <span>
             <strong className="text-[#1A1A1A]">{percent}%</strong> funded
@@ -296,7 +297,7 @@ function BookmarkIcon({ size }: { size: number }) {
   );
 }
 
-function ClockLabel({ text, small }: { text: string; small?: boolean }) {
+function ClockLabel({ text, small }: { text: React.ReactNode; small?: boolean }) {
   const s = small ? 10 : 13;
   return (
     <span className="inline-flex items-center gap-1">

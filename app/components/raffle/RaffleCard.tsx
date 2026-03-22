@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import type { Raffle } from "@/types";
@@ -17,6 +17,16 @@ export default function RaffleCard({ raffle, isDeposited }: RaffleCardProps) {
   const [imageLoaded, setImageLoaded] = useState(false);
   const percent = calcPercent(raffle.totalYieldEarned, raffle.targetValueUSD);
   const cover = raffle.property.images[0];
+
+  // Live countdown
+  const [timeLeft, setTimeLeft] = useState(formatTimeLeft(raffle.expiresAt));
+  useEffect(() => {
+    if (raffle.status !== "active") return;
+    const interval = setInterval(() => {
+      setTimeLeft(formatTimeLeft(raffle.expiresAt));
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [raffle.expiresAt, raffle.status]);
 
   return (
     <Link
@@ -127,7 +137,7 @@ export default function RaffleCard({ raffle, isDeposited }: RaffleCardProps) {
           <div className="flex items-center justify-between text-xs text-[#717171]">
             <span>{raffle.depositorCount.toLocaleString()} depositors</span>
             {raffle.status === "active" ? (
-              <span>{(() => { const t = formatTimeLeft(raffle.expiresAt); return t === "Expired" ? t : `${t} left`; })()}</span>
+              <span className="font-mono tabular-nums">{timeLeft === "Expired" ? timeLeft : `${timeLeft} left`}</span>
             ) : raffle.winner ? (
               <span className="text-[#008A05] font-semibold">Winner: {raffle.winner.displayName}</span>
             ) : (
