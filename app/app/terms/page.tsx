@@ -33,11 +33,9 @@ export default function TermsOfServicePage() {
 
         <Section title="2. Eligibility">
           <p>
-            You must be at least 18 years of age and legally able to enter into contracts in your
-            jurisdiction. Dollar House Club is a skill-based platform and is not available in
-            jurisdictions where participation in skill-based property acquisition contests is
-            prohibited. You are responsible for determining whether your use of the Platform complies
-            with applicable law.
+            You must be at least 18 years of age to use Dollar House Club. The platform may not be
+            available in all regions. You are responsible for ensuring your use of the Platform
+            complies with your local laws.
           </p>
         </Section>
 
@@ -47,8 +45,8 @@ export default function TermsOfServicePage() {
             deposit USDC stablecoins into raffle pools. The deposited principal generates yield through
             DeFi lending protocols. All yield is directed to the prize pool. At the conclusion of each
             raffle period, a winner is selected through a weighted, verifiable random process
-            proportional to each participant&apos;s yield contribution — subject to the completion of a
-            mandatory skill-based question.
+            proportional to each participant&apos;s yield contribution — after answering a quick
+            knowledge question.
           </p>
           <p>
             Your principal deposit is never at risk. You may withdraw your full deposit at any time
@@ -58,11 +56,10 @@ export default function TermsOfServicePage() {
 
         <Section title="4. Skill-Based Entry Requirement">
           <p>
-            To be eligible for any raffle drawing, participants must correctly answer a skill-based
-            question prior to the drawing. This requirement ensures compliance with regulations
-            distinguishing skill-based contests from games of chance. Failure to answer correctly
-            disqualifies the entry for that drawing cycle; the participant may re-attempt in subsequent
-            cycles while their deposit remains active.
+            To be eligible for any raffle drawing, participants must correctly answer a knowledge
+            question prior to the drawing. Failure to answer correctly disqualifies the entry for
+            that drawing cycle; the participant may re-attempt with a new question. Your deposit
+            remains safe regardless of your answer.
           </p>
         </Section>
 
