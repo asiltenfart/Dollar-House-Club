@@ -1,6 +1,6 @@
 "use client";
 
-import React, { createContext, useContext, useState, useCallback } from "react";
+import React, { createContext, useContext, useState, useCallback, useEffect } from "react";
 
 type DataSource = "mock" | "onchain";
 
@@ -22,11 +22,28 @@ export function useDataSource() {
   return useContext(DataSourceContext);
 }
 
+const STORAGE_KEY = "dhc-data-source";
+
+function getStoredSource(): DataSource {
+  if (typeof window === "undefined") return "mock";
+  const stored = localStorage.getItem(STORAGE_KEY);
+  return stored === "onchain" ? "onchain" : "mock";
+}
+
 export function DataSourceProvider({ children }: { children: React.ReactNode }) {
   const [dataSource, setDataSource] = useState<DataSource>("mock");
 
+  // Hydrate from localStorage on mount
+  useEffect(() => {
+    setDataSource(getStoredSource());
+  }, []);
+
   const toggleDataSource = useCallback(() => {
-    setDataSource((prev) => (prev === "mock" ? "onchain" : "mock"));
+    setDataSource((prev) => {
+      const next = prev === "mock" ? "onchain" : "mock";
+      localStorage.setItem(STORAGE_KEY, next);
+      return next;
+    });
   }, []);
 
   return (
