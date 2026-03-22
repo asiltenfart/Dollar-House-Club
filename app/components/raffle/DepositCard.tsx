@@ -142,6 +142,32 @@ export default function DepositCard({
         className="p-6 border border-[#DDDDDD] rounded-[12px] bg-white"
         style={{ boxShadow: "0 8px 28px rgba(0,0,0,0.15)" }}
       >
+        {/* User position — prominent banner at top */}
+        {userDeposit && (
+          <div className="bg-[#F0FFF4] border border-[#B7EBC9] rounded-[10px] p-4 mb-5">
+            <div className="flex items-center gap-2 mb-3">
+              <div className="w-6 h-6 rounded-full bg-[#008A05] flex items-center justify-center">
+                <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                  <path d="M3 7L6 10L11 4" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+              </div>
+              <span className="text-sm font-bold text-[#008A05]">You&apos;re in this raffle</span>
+            </div>
+            <div className="flex items-center justify-between mb-1">
+              <span className="text-sm text-[#4A7C59]">Your deposit</span>
+              <span className="text-sm font-bold text-[#222222]">
+                {formatUSD(userDeposit.principalAmount)}
+              </span>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-sm text-[#4A7C59]">Win chance</span>
+              <span className="text-sm font-bold text-[#FF385C]">
+                {formatPercent(userDeposit.winChance)}
+              </span>
+            </div>
+          </div>
+        )}
+
         {/* Target + Progress */}
         <div className="mb-5">
           <p className="text-xs font-semibold text-[#717171] uppercase tracking-widest mb-1">Property Value</p>
@@ -188,21 +214,9 @@ export default function DepositCard({
               {isDepositing ? "" : isAuthenticated ? "Deposit" : "Sign In to Deposit"}
             </Button>
 
-            {/* User position */}
+            {/* Withdraw button */}
             {userDeposit && (
               <div className="mt-4 pt-4 border-t border-[#EBEBEB]">
-                <div className="flex items-center justify-between mb-1">
-                  <span className="text-sm text-[#717171]">Your deposit</span>
-                  <span className="text-sm font-semibold text-[#222222]">
-                    {formatUSD(userDeposit.principalAmount)}
-                  </span>
-                </div>
-                <div className="flex items-center justify-between mb-3">
-                  <span className="text-sm text-[#717171]">Win chance</span>
-                  <span className="text-sm font-semibold text-[#FF385C]">
-                    {formatPercent(userDeposit.winChance)}
-                  </span>
-                </div>
                 <Button
                   variant="outline"
                   fullWidth

@@ -2,13 +2,13 @@
 
 import React, { useState, use } from "react";
 import { notFound } from "next/navigation";
-import { useRaffleById, useRaffleDeposits, parseRaffleId } from "@/lib/data/useRaffleData";
+import { useRaffleById, useRaffleDeposits, useOnChainUserDeposit, parseRaffleId } from "@/lib/data/useRaffleData";
 import { useAuth } from "@/lib/auth/AuthContext";
 import PropertyGallery from "@/components/raffle/PropertyGallery";
 import DepositCard from "@/components/raffle/DepositCard";
 import WinnerReveal from "@/components/raffle/WinnerReveal";
 import { RaffleStatusBadge } from "@/components/ui/Badge";
-import { formatUSD, formatDate, formatTimeLeft } from "@/lib/utils/format";
+import { formatUSD, formatUSDDecimal, formatDate, formatTimeLeft, formatPercent } from "@/lib/utils/format";
 import Link from "next/link";
 import RaffleSettlement from "@/components/raffle/RaffleSettlement";
 
@@ -19,8 +19,9 @@ interface PageProps {
 export default function RaffleDetailPage({ params }: PageProps) {
   const { id } = use(params);
   const { raffle, isLoading } = useRaffleById(id);
-  const { deposits } = useRaffleDeposits(id);
   const { user } = useAuth();
+  const { deposits } = useRaffleDeposits(id, user);
+  const { userDeposit: onChainDeposit } = useOnChainUserDeposit(id, user?.profile.address ?? null);
 
   if (isLoading) {
     return (
@@ -36,9 +37,11 @@ export default function RaffleDetailPage({ params }: PageProps) {
 
   const isSeller = user?.profile.address === raffle.seller.address;
 
-  const userDeposit = user
+  // Use mock deposit match first, fall back to on-chain deposit query
+  const mockDeposit = user
     ? deposits.find((d) => d.user.address === user.profile.address) ?? null
     : null;
+  const userDeposit = mockDeposit ?? onChainDeposit;
 
   const sellerInitials = raffle.seller.displayName
     .split(" ")
@@ -78,6 +81,26 @@ export default function RaffleDetailPage({ params }: PageProps) {
         {raffle.winner && (
           <div className="pt-6">
             <WinnerReveal raffle={raffle} />
+          </div>
+        )}
+
+        {/* User deposit banner */}
+        {userDeposit && (
+          <div className="pt-6">
+            <div className="bg-[#F0FFF4] border border-[#B7EBC9] rounded-[12px] p-4 flex items-center gap-4 flex-wrap">
+              <div className="w-8 h-8 rounded-full bg-[#008A05] flex items-center justify-center shrink-0">
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                  <path d="M3 8L6.5 11.5L13 4.5" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-bold text-[#008A05]">You&apos;re in this raffle</p>
+                <p className="text-sm text-[#4A7C59]">
+                  You deposited <strong className="text-[#222222]">{formatUSD(userDeposit.principalAmount)}</strong>
+                  {" · "}Win chance: <strong className="text-[#FF385C]">{formatPercent(userDeposit.winChance)}</strong>
+                </p>
+              </div>
+            </div>
           </div>
         )}
 

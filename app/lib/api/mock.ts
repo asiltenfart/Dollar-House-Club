@@ -285,8 +285,8 @@ export const MOCK_RAFFLES: Raffle[] = [
 
 // ============ MOCK DEPOSITS ============
 
-export function getMockDepositsForRaffle(raffleId: string): Deposit[] {
-  return [
+export function getMockDepositsForRaffle(raffleId: string, currentUser?: UserProfile | null): Deposit[] {
+  const deposits: Deposit[] = [
     {
       id: `dep-${raffleId}-1`,
       raffleId,
@@ -308,6 +308,22 @@ export function getMockDepositsForRaffle(raffleId: string): Deposit[] {
       isWithdrawn: false,
     },
   ];
+
+  // Include the current user as a depositor so the UI can show their position
+  if (currentUser && !deposits.some((d) => d.user.address === currentUser.address)) {
+    deposits.push({
+      id: `dep-${raffleId}-current`,
+      raffleId,
+      user: currentUser,
+      principalAmount: 250,
+      yieldGenerated: 18,
+      winChance: 1.2,
+      depositedAt: new Date(Date.now() - 86400000 * 2).toISOString(),
+      isWithdrawn: false,
+    });
+  }
+
+  return deposits;
 }
 
 // ============ SKILL QUESTIONS ============

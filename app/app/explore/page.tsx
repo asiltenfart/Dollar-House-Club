@@ -1,7 +1,8 @@
 "use client";
 
 import React, { useState, useMemo } from "react";
-import { useRaffles } from "@/lib/data/useRaffleData";
+import { useRaffles, useUserDepositedRaffleIds } from "@/lib/data/useRaffleData";
+import { useAuth } from "@/lib/auth/AuthContext";
 import RaffleCard from "@/components/raffle/RaffleCard";
 import { RaffleCardSkeleton } from "@/components/ui/Skeleton";
 import type { ExploreFilters } from "@/types";
@@ -17,6 +18,8 @@ export default function ExplorePage() {
     perPage: 12,
   });
   const { raffles, isLoading: loading } = useRaffles();
+  const { user } = useAuth();
+  const depositedIds = useUserDepositedRaffleIds(raffles, user?.profile.address ?? null);
 
   const filtered = useMemo(() => {
     let result = [...raffles];
@@ -151,7 +154,7 @@ export default function ExplorePage() {
           <>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {paged.map((raffle) => (
-                <RaffleCard key={raffle.id} raffle={raffle} />
+                <RaffleCard key={raffle.id} raffle={raffle} isDeposited={depositedIds.has(raffle.id)} />
               ))}
             </div>
 

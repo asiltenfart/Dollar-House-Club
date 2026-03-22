@@ -10,9 +10,10 @@ import { RaffleStatusBadge, VerifiedBadge } from "@/components/ui/Badge";
 
 interface RaffleCardProps {
   raffle: Raffle;
+  isDeposited?: boolean;
 }
 
-export default function RaffleCard({ raffle }: RaffleCardProps) {
+export default function RaffleCard({ raffle, isDeposited }: RaffleCardProps) {
   const [imageLoaded, setImageLoaded] = useState(false);
   const percent = calcPercent(raffle.totalYieldEarned, raffle.targetValueUSD);
   const cover = raffle.property.images[0];
@@ -73,6 +74,18 @@ export default function RaffleCard({ raffle }: RaffleCardProps) {
         <div className="absolute top-3 right-3">
           <VerifiedBadge />
         </div>
+
+        {/* Deposited badge */}
+        {isDeposited && (
+          <div className="absolute bottom-3 right-3">
+            <span className="inline-flex items-center gap-1 text-xs font-semibold text-white bg-[#008A05] rounded-full px-2.5 py-1 shadow-sm">
+              <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+                <path d="M2.5 6L5 8.5L9.5 3.5" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+              Deposited
+            </span>
+          </div>
+        )}
 
         {/* Overfunded label */}
         {raffle.isOverfunded && (

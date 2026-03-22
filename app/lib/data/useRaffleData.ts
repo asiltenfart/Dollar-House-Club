@@ -4,7 +4,7 @@ import { useMemo, useState, useEffect } from "react";
 import { useDataSource } from "./DataSourceContext";
 import { chainRaffleToFrontend, type ChainRaffleData } from "./adapter";
 import { MOCK_RAFFLES, getRaffle as getMockRaffle, getMockDepositsForRaffle } from "@/lib/api/mock";
-import { GET_ALL_RAFFLES, GET_RAFFLE } from "@/lib/flow/cadence";
+import { GET_ALL_RAFFLES, GET_RAFFLE, GET_DEPOSIT } from "@/lib/flow/cadence";
 import type { Raffle, Deposit } from "@/types";
 
 // ── Fetch all raffles (mock or on-chain) ────────────────────────────────────
@@ -100,15 +100,127 @@ export function useRaffleById(id: string): { raffle: Raffle | null; isLoading: b
 
 // ── Fetch deposits for a raffle (mock or on-chain) ──────────────────────────
 
-export function useRaffleDeposits(id: string): { deposits: Deposit[]; isLoading: boolean } {
+export function useRaffleDeposits(id: string, currentUser?: { profile: { address: string; displayName: string } } | null): { deposits: Deposit[]; isLoading: boolean } {
   const { isMock } = useDataSource();
 
   if (isMock) {
-    return { deposits: getMockDepositsForRaffle(id), isLoading: false };
+    // Pass current user profile so mock data includes them as a depositor
+    const userProfile = currentUser ? {
+      address: currentUser.profile.address,
+      displayName: currentUser.profile.displayName,
+      avatarUrl: null,
+      email: "",
+      rafflesEntered: 0,
+      rafflesWon: 0,
+      rafflesListed: 0,
+      rafflesCompleted: 0,
+      joinedAt: new Date().toISOString(),
+    } : null;
+    return { deposits: getMockDepositsForRaffle(id, userProfile), isLoading: false };
   }
 
   // On-chain deposits are handled by DepositCard's own hooks
   return { deposits: [], isLoading: false };
+}
+
+// ── Fetch current user's on-chain deposit for a raffle ──────────────────────
+
+export function useOnChainUserDeposit(
+  raffleId: string,
+  userAddress: string | null
+): { userDeposit: Deposit | null; isLoading: boolean } {
+  const { isMock, isHydrated } = useDataSource();
+  const [deposit, setDeposit] = useState<Deposit | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+
+  const numericId = parseRaffleId(raffleId);
+
+  useEffect(() => {
+    if (!isHydrated || isMock || !userAddress || isNaN(numericId)) return;
+
+    let cancelled = false;
+    setIsLoading(true);
+
+    import("@onflow/fcl").then(async (fcl) => {
+      try {
+        const result = await fcl.query({
+          cadence: GET_DEPOSIT,
+          args: (arg: typeof fcl.arg, t: typeof fcl.t) => [
+            arg(String(numericId), t.UInt64),
+            arg(userAddress, t.Address),
+          ],
+        });
+
+        if (!cancelled && result) {
+          // result is DepositInfo: { depositor: Address, amount: UFix64, depositedAt: UFix64 }
+          setDeposit({
+            id: `dep-${raffleId}-${userAddress}`,
+            raffleId,
+            user: {
+              address: result.depositor ?? userAddress,
+              displayName: userAddress,
+              avatarUrl: null,
+              email: "",
+              rafflesEntered: 0,
+              rafflesWon: 0,
+              rafflesListed: 0,
+              rafflesCompleted: 0,
+              joinedAt: "",
+            },
+            principalAmount: parseFloat(result.amount),
+            yieldGenerated: 0,
+            winChance: 0,
+            depositedAt: new Date(parseFloat(result.depositedAt) * 1000).toISOString(),
+            isWithdrawn: false,
+          });
+        } else if (!cancelled) {
+          setDeposit(null);
+        }
+      } catch {
+        if (!cancelled) setDeposit(null);
+      } finally {
+        if (!cancelled) setIsLoading(false);
+      }
+    });
+
+    return () => { cancelled = true; };
+  }, [isMock, isHydrated, numericId, userAddress, raffleId]);
+
+  return { userDeposit: deposit, isLoading };
+}
+
+// ── Get raffle IDs where the current user has deposited ─────────────────────
+
+export function useUserDepositedRaffleIds(
+  raffles: Raffle[],
+  userAddress: string | null
+): Set<string> {
+  const { isMock } = useDataSource();
+
+  return useMemo(() => {
+    if (!userAddress || !isMock) return new Set<string>();
+
+    const mockUser = {
+      address: userAddress,
+      displayName: "",
+      avatarUrl: null,
+      email: "",
+      rafflesEntered: 0,
+      rafflesWon: 0,
+      rafflesListed: 0,
+      rafflesCompleted: 0,
+      joinedAt: new Date().toISOString(),
+    };
+
+    const ids = new Set<string>();
+    for (const raffle of raffles) {
+      const deposits = getMockDepositsForRaffle(raffle.id, mockUser);
+      if (deposits.some((d) => d.user.address === userAddress)) {
+        ids.add(raffle.id);
+      }
+    }
+    return ids;
+  }, [raffles, userAddress, isMock]);
 }
 
 // ── Get the numeric raffle ID for on-chain operations ───────────────────────
