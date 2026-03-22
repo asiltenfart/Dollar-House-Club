@@ -74,7 +74,8 @@ export function useRaffleById(id: string): { raffle: Raffle | null; isLoading: b
     }
 
     let cancelled = false;
-    setIsLoading(true);
+    // Only show loading spinner on initial fetch, not refetches
+    if (fetchKey === 0) setIsLoading(true);
 
     import("@onflow/fcl").then(async (fcl) => {
       try {

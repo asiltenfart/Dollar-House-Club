@@ -50,18 +50,37 @@ export default function DepositCard({
   const [showConfetti, setShowConfetti] = useState(false);
   const depositCooldown = useRef(false);
 
-  // Real-time ticking yield: 500% APY on totalDeposited
+  // ── Real on-chain yield with client-side interpolation ──────────────────
+  //
+  // 1. Poll SimpleYieldSource.getPendingYield() every 10s for the real value
+  // 2. Between polls, interpolate locally using the APY rate so the ticker
+  //    visibly ticks up without waiting for the next on-chain read
+  // 3. Whenever a fresh on-chain value arrives, snap to it (no drift)
+  //
+  const raffleIdNum = parseInt(raffle.id.replace("raffle-", ""), 10) || parseInt(raffle.id, 10);
+  const { data: onChainPendingYield, refetch: refetchYield } = usePendingYield(
+    raffle.status === "active" ? raffleIdNum : null
+  );
+
   const APY_RATE = 5.0;
   const SECONDS_PER_YEAR = 31536000;
-  const TICK_MS = 100; // tick every 100ms for smooth animation
-  const yieldPerTick = raffle.totalDeposited > 0 ? (raffle.totalDeposited * APY_RATE * TICK_MS) / (SECONDS_PER_YEAR * 1000) : 0;
+  const TICK_MS = 100;
+  const yieldPerTick = raffle.totalDeposited > 0
+    ? (raffle.totalDeposited * APY_RATE * TICK_MS) / (SECONDS_PER_YEAR * 1000)
+    : 0;
 
-  const [liveYield, setLiveYield] = useState(raffle.totalYieldEarned);
+  // Total yield = already-harvested (on-chain totalYield) + pending (unharvested)
+  const pendingYield = onChainPendingYield != null ? Number(onChainPendingYield) : 0;
+  const baseYield = raffle.totalYieldEarned + pendingYield;
 
+  const [liveYield, setLiveYield] = useState(baseYield);
+
+  // Snap to on-chain value whenever it updates
   useEffect(() => {
-    setLiveYield(raffle.totalYieldEarned);
-  }, [raffle.totalYieldEarned]);
+    setLiveYield(raffle.totalYieldEarned + (onChainPendingYield != null ? Number(onChainPendingYield) : 0));
+  }, [raffle.totalYieldEarned, onChainPendingYield]);
 
+  // Interpolate between on-chain polls
   useEffect(() => {
     if (yieldPerTick <= 0 || raffle.status !== "active") return;
     const interval = setInterval(() => {
@@ -69,6 +88,13 @@ export default function DepositCard({
     }, TICK_MS);
     return () => clearInterval(interval);
   }, [yieldPerTick, raffle.status]);
+
+  // Poll on-chain yield every 10s
+  useEffect(() => {
+    if (raffle.status !== "active") return;
+    const interval = setInterval(() => { refetchYield(); }, 10000);
+    return () => clearInterval(interval);
+  }, [raffle.status, refetchYield]);
 
   // Live countdown timer
   const [timeLeft, setTimeLeft] = useState(formatTimeLeft(raffle.expiresAt));

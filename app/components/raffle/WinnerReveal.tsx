@@ -1,6 +1,6 @@
 import React from "react";
 import type { Raffle } from "@/types";
-import { formatUSD } from "@/lib/utils/format";
+import { formatYieldTicker } from "@/lib/utils/format";
 
 interface WinnerRevealProps {
   raffle: Raffle;
@@ -54,7 +54,7 @@ export default function WinnerReveal({ raffle }: WinnerRevealProps) {
         <span className="text-2xl" role="img" aria-label="Celebration">🎉</span>
         <div>
           <p className="text-base font-bold text-[#222222]">
-            {raffle.winner.displayName} won {formatUSD(raffle.totalYieldEarned)} in yield!
+            {raffle.winner.displayName} won {formatYieldTicker(raffle.totalYieldEarned)} in yield!
           </p>
           <p className="text-xs text-[#717171] mt-1">
             This raffle did not reach its target. Yield was raffled among depositors. All principals have been returned.

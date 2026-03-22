@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { useCommitRaffle, useRevealWinner, useIsRaffleExpired, useIsRaffleCommitted, useHarvestYield } from "@/lib/flow/hooks";
+import { useCommitRaffle, useRevealWinner, useIsRaffleExpired, useIsRaffleCommitted, useHarvestYield, useRaffle } from "@/lib/flow/hooks";
 import { useToast } from "@/components/ui/Toast";
 import Button from "@/components/ui/Button";
 
@@ -18,6 +18,8 @@ export default function RaffleSettlement({
 }: RaffleSettlementProps) {
   const { data: isExpired, refetch: refetchExpired } = useIsRaffleExpired(raffleId);
   const { data: isCommitted, refetch: refetchCommitted } = useIsRaffleCommitted(raffleId);
+  // Also check the real on-chain status to detect if scheduler already settled
+  const { data: onChainRaffle, refetch: refetchRaffle } = useRaffle(raffleId);
 
   // Poll expiry status every 10s until expired (emulator needs block advancement)
   useEffect(() => {
@@ -27,15 +29,49 @@ export default function RaffleSettlement({
     }, 10000);
     return () => clearInterval(interval);
   }, [status, isExpired, refetchExpired]);
+
+  // Poll on-chain raffle status every 10s to detect scheduler-driven settlement
+  useEffect(() => {
+    if (status !== "active") return;
+    const interval = setInterval(() => {
+      refetchRaffle();
+    }, 10000);
+    return () => clearInterval(interval);
+  }, [status, refetchRaffle]);
+
   const { commitRaffle } = useCommitRaffle();
   const { revealWinner } = useRevealWinner();
   const { harvestYield } = useHarvestYield();
   const { showToast } = useToast();
   const [isCommitting, setIsCommitting] = useState(false);
   const [isRevealing, setIsRevealing] = useState(false);
+  // Delay showing the banner so auto-settlement has time to resolve first
+  const [showDelayPassed, setShowDelayPassed] = useState(false);
+  useEffect(() => {
+    if (status !== "active" || !isExpired) return;
+    const timer = setTimeout(() => setShowDelayPassed(true), 60000);
+    return () => clearTimeout(timer);
+  }, [status, isExpired]);
 
-  // Only show for active raffles that have expired
-  if (status !== "active" || !isExpired) return null;
+  // If the on-chain status is no longer active (rawValue 0), the raffle
+  // has been committed or resolved — possibly by the scheduler.
+  // Trigger a full page refetch so the parent components update.
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const onChainStatus = (onChainRaffle as any)?.status?.rawValue;
+  const hasNotifiedSettled = React.useRef(false);
+  useEffect(() => {
+    // rawValue "2" = resolved_funded, "3" = resolved_unfunded
+    if ((onChainStatus === "2" || onChainStatus === "3") && !hasNotifiedSettled.current) {
+      hasNotifiedSettled.current = true;
+      onSettled?.();
+    }
+  }, [onChainStatus, onSettled]);
+
+  // Hide if raffle is already settled on-chain (scheduler did it)
+  if (onChainStatus === "2" || onChainStatus === "3") return null;
+
+  // Only show for active raffles that have expired, after a delay
+  if (status !== "active" || !isExpired || !showDelayPassed) return null;
 
   const handleCommit = async () => {
     setIsCommitting(true);
@@ -50,7 +86,9 @@ export default function RaffleSettlement({
       showToast("Randomness committed! Now reveal the winner.", "success");
       refetchCommitted();
     } catch (e) {
-      showToast("Failed to commit. Please try again.", "error");
+      // If commit fails because raffle is already committed/resolved, refetch
+      refetchRaffle();
+      showToast("Failed to commit. The raffle may have been settled automatically.", "error");
       console.error("Commit error:", e);
     }
     setIsCommitting(false);
@@ -63,6 +101,7 @@ export default function RaffleSettlement({
       showToast("Winner revealed!", "success");
       onSettled?.();
     } catch (e) {
+      refetchRaffle();
       showToast("Failed to reveal. Wait a moment and try again.", "error");
       console.error("Reveal error:", e);
     }
