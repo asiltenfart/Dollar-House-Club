@@ -4,7 +4,7 @@ import { useMemo, useState, useEffect, useCallback } from "react";
 import { useDataSource } from "./DataSourceContext";
 import { chainRaffleToFrontend, type ChainRaffleData } from "./adapter";
 import { MOCK_RAFFLES, getRaffle as getMockRaffle, getMockDepositsForRaffle } from "@/lib/api/mock";
-import { GET_ALL_RAFFLES, GET_RAFFLE, GET_DEPOSIT, GET_PENDING_YIELD, GET_USER_DEPOSITED_RAFFLE_IDS } from "@/lib/flow/cadence";
+import { GET_ALL_RAFFLES, GET_RAFFLE, GET_DEPOSIT, GET_PENDING_YIELD, GET_USER_DEPOSITED_RAFFLE_IDS, GET_USER_TOTAL_ALLOCATED } from "@/lib/flow/cadence";
 import type { Raffle, Deposit } from "@/types";
 
 // ── Fetch all raffles (mock or on-chain) ────────────────────────────────────
@@ -290,23 +290,31 @@ export function useUserDepositedRaffleIds(
 export function useProfileStats(
   raffles: Raffle[],
   address: string | null
-): { rafflesEntered: number; rafflesWon: number; rafflesListed: number; rafflesCompleted: number; yieldWon: number } {
+): { rafflesEntered: number; rafflesWon: number; rafflesListed: number; rafflesCompleted: number; yieldWon: number; totalAllocated: number } {
   const { isMock, isHydrated } = useDataSource();
   const [onChainEnteredCount, setOnChainEnteredCount] = useState(0);
+  const [onChainAllocated, setOnChainAllocated] = useState(0);
 
-  // For on-chain: query deposited raffle IDs
+  // For on-chain: query deposited raffle IDs and total allocated
   useEffect(() => {
     if (isMock || !isHydrated || !address) return;
 
     let cancelled = false;
     import("@onflow/fcl").then(async (fcl) => {
       try {
-        const ids = await fcl.query({
-          cadence: GET_USER_DEPOSITED_RAFFLE_IDS,
-          args: (arg: typeof fcl.arg, t: typeof fcl.t) => [arg(address, t.Address)],
-        });
-        if (!cancelled && Array.isArray(ids)) {
-          setOnChainEnteredCount(ids.length);
+        const [ids, allocated] = await Promise.all([
+          fcl.query({
+            cadence: GET_USER_DEPOSITED_RAFFLE_IDS,
+            args: (arg: typeof fcl.arg, t: typeof fcl.t) => [arg(address, t.Address)],
+          }),
+          fcl.query({
+            cadence: GET_USER_TOTAL_ALLOCATED,
+            args: (arg: typeof fcl.arg, t: typeof fcl.t) => [arg(address, t.Address)],
+          }),
+        ]);
+        if (!cancelled) {
+          if (Array.isArray(ids)) setOnChainEnteredCount(ids.length);
+          if (allocated != null) setOnChainAllocated(parseFloat(allocated));
         }
       } catch {
         // Silently fail — stats will show 0
@@ -317,7 +325,7 @@ export function useProfileStats(
   }, [isMock, isHydrated, address]);
 
   return useMemo(() => {
-    if (!address) return { rafflesEntered: 0, rafflesWon: 0, rafflesListed: 0, rafflesCompleted: 0, yieldWon: 0 };
+    if (!address) return { rafflesEntered: 0, rafflesWon: 0, rafflesListed: 0, rafflesCompleted: 0, yieldWon: 0, totalAllocated: 0 };
 
     const listed = raffles.filter((r) => r.seller.address === address);
     const won = raffles.filter((r) => r.winner?.address === address);
@@ -325,7 +333,6 @@ export function useProfileStats(
     const yieldWon = won.reduce((sum, r) => sum + r.totalYieldEarned, 0);
 
     if (isMock) {
-      // For mock data, use the mock user's stats
       const mockUser = raffles.find((r) => r.seller.address === address)?.seller
         ?? raffles.find((r) => r.winner?.address === address)?.winner;
       return {
@@ -334,6 +341,7 @@ export function useProfileStats(
         rafflesListed: listed.length,
         rafflesCompleted: completed.length,
         yieldWon,
+        totalAllocated: 0,
       };
     }
 
@@ -343,8 +351,9 @@ export function useProfileStats(
       rafflesListed: listed.length,
       rafflesCompleted: completed.length,
       yieldWon,
+      totalAllocated: onChainAllocated,
     };
-  }, [raffles, address, isMock, onChainEnteredCount]);
+  }, [raffles, address, isMock, onChainEnteredCount, onChainAllocated]);
 }
 
 // ── Get the numeric raffle ID for on-chain operations ───────────────────────

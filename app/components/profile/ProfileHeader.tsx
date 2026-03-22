@@ -3,7 +3,7 @@
 import React, { useMemo } from "react";
 import Image from "next/image";
 import type { UserProfile } from "@/types";
-import { formatDate, formatYieldTicker } from "@/lib/utils/format";
+import { formatDate, formatYieldTicker, formatUSDDecimal } from "@/lib/utils/format";
 import { getAvatar } from "@/lib/utils/avatars";
 
 interface ProfileStats {
@@ -12,6 +12,7 @@ interface ProfileStats {
   rafflesListed: number;
   rafflesCompleted: number;
   yieldWon: number;
+  totalAllocated: number;
 }
 
 interface ProfileHeaderProps {
@@ -72,6 +73,8 @@ export default function ProfileHeader({ user, stats }: ProfileHeaderProps) {
         <StatItem value={String(stats?.rafflesWon ?? user.rafflesWon)} label="Raffles Won" />
         <div className="w-px h-8 bg-[#EBEBEB]" />
         <StatItem value={stats?.yieldWon ? formatYieldTicker(stats.yieldWon) : "$0.00"} label="Yield Won" color="#008A05" />
+        <div className="w-px h-8 bg-[#EBEBEB]" />
+        <StatItem value={formatUSDDecimal(stats?.totalAllocated ?? 0)} label="Allocated" />
         <div className="w-px h-8 bg-[#EBEBEB]" />
         <StatItem value={String(stats?.rafflesListed ?? user.rafflesListed)} label="Properties Listed" />
       </div>
