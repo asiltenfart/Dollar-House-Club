@@ -29,15 +29,24 @@ transaction(amount: UFix64) {
 
 export const CREATE_RAFFLE = `
 import "DollarHouseRaffle"
+import "RaffleScheduler"
 
 transaction(title: String, description: String, targetValue: UFix64) {
     prepare(signer: auth(BorrowValue) &Account) {
-        DollarHouseRaffle.createRaffle(
+        let raffleId = DollarHouseRaffle.createRaffle(
             signer: signer,
             title: title,
             description: description,
             targetValue: targetValue
         )
+        // Auto-schedule resolution at expiry if scheduler is configured
+        if RaffleScheduler.isConfigured {
+            let raffleView = DollarHouseRaffle.getRaffle(raffleId: raffleId)!
+            RaffleScheduler.scheduleCommit(
+                raffleId: raffleId,
+                expiresAt: raffleView.expiresAt
+            )
+        }
     }
 }
 `;

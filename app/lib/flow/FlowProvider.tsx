@@ -12,6 +12,7 @@ const flowJSON = {
     SimpleYieldSource: { source: "./cadence/contracts/SimpleYieldSource.cdc" },
     Xorshift128plus: { source: "./cadence/contracts/Xorshift128plus.cdc" },
     RandomConsumer: { source: "./cadence/contracts/RandomConsumer.cdc" },
+    RaffleScheduler: { source: "./cadence/contracts/RaffleScheduler.cdc" },
   },
   dependencies: {
     Burner: {
@@ -62,6 +63,22 @@ const flowJSON = {
         testnet: "631e88ae7f1d7c20",
       },
     },
+    FlowTransactionScheduler: {
+      source: "mainnet://e467b9dd11fa00df.FlowTransactionScheduler",
+      aliases: {
+        emulator: "f8d6e0586b0a20c7",
+        mainnet: "e467b9dd11fa00df",
+        testnet: "8c5303eaa26202d6",
+      },
+    },
+    FlowToken: {
+      source: "mainnet://1654653399040a61.FlowToken",
+      aliases: {
+        emulator: "0ae53cb6e3f42a79",
+        mainnet: "1654653399040a61",
+        testnet: "7e60df042a9c0868",
+      },
+    },
   },
   networks: {
     emulator: "127.0.0.1:3569",
@@ -82,6 +99,7 @@ const flowJSON = {
         "DummyPYUSD",
         "SimpleYieldSource",
         "DollarHouseRaffle",
+        "RaffleScheduler",
       ],
     },
   },

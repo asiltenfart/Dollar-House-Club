@@ -111,6 +111,15 @@ echo -e "  ${GREEN}✓${NC} Test account ready at $TEST_ADDR"
 
 echo ""
 
+# ── 0b. Setup RaffleScheduler ─────────────────────────────────────────────
+echo -e "${YELLOW}Setup: Configuring RaffleScheduler${NC}"
+
+assert_success "Setup RaffleScheduler (handler + fee provider)" \
+    $FLOW transactions send cadence/transactions/setup_scheduler.cdc \
+    --signer "$EMULATOR_ACCOUNT" -n emulator
+
+echo ""
+
 # ── 1. Setup: Mint PYUSD for test accounts ──────────────────────────────────
 echo -e "${YELLOW}Setup: Minting PYUSD for test accounts${NC}"
 
@@ -292,6 +301,38 @@ echo -e "${YELLOW}Access Control Tests${NC}"
 assert_fail "Withdraw from raffle with no deposit (emulator-account on raffle #1) should fail" \
     $FLOW transactions send cadence/transactions/withdraw.cdc 1 \
     --signer "$EMULATOR_ACCOUNT" -n emulator
+
+echo ""
+
+# ── 12. RaffleScheduler tests ────────────────────────────────────────────────
+echo -e "${YELLOW}RaffleScheduler Tests${NC}"
+
+# Raffle #1 and #2 were created after scheduler setup — they should be auto-scheduled
+assert_output_contains "Raffle #1 is auto-scheduled" "true" \
+    $FLOW scripts execute cadence/scripts/is_raffle_scheduled.cdc 1 -n emulator
+
+assert_output_contains "Raffle #2 is auto-scheduled" "true" \
+    $FLOW scripts execute cadence/scripts/is_raffle_scheduled.cdc 2 -n emulator
+
+# Non-existent raffle should not be scheduled
+assert_output_contains "Non-existent raffle is not scheduled" "false" \
+    $FLOW scripts execute cadence/scripts/is_raffle_scheduled.cdc 9999 -n emulator
+
+# Double-scheduling the same raffle should fail
+assert_fail "Double-scheduling raffle #1 should fail" \
+    $FLOW transactions send cadence/transactions/schedule_raffle.cdc 1 \
+    --signer "$EMULATOR_ACCOUNT" -n emulator
+
+# Create raffle #3 (auto-schedules via create_raffle.cdc)
+assert_success "Create raffle #3 (auto-scheduled)" \
+    $FLOW transactions send cadence/transactions/create_raffle.cdc \
+    "Scheduler Test House" "Testing auto-scheduling" 50000.0 \
+    --signer "$EMULATOR_ACCOUNT" -n emulator
+
+assert_output_contains "Raffle #3 is auto-scheduled" "true" \
+    $FLOW scripts execute cadence/scripts/is_raffle_scheduled.cdc 3 -n emulator
+
+# Manual commit/reveal still works (fallback path) — tested via existing tests above
 
 echo ""
 
