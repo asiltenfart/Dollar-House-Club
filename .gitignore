@@ -2,3 +2,7 @@ Dollar_House_Club_L3_Design_Spec.md
 memory/MEMORY.md
 .DS_Store
 flow.json
+
+.pkey
+testnet.pkey
+*.pkey
