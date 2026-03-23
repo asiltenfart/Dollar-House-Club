@@ -7,12 +7,30 @@ import React, { useState, useEffect, type ReactNode } from "react";
 
 const flowJSON = {
   contracts: {
-    DummyPYUSD: { source: "./cadence/contracts/DummyPYUSD.cdc" },
-    DollarHouseRaffle: { source: "./cadence/contracts/DollarHouseRaffle.cdc" },
-    SimpleYieldSource: { source: "./cadence/contracts/SimpleYieldSource.cdc" },
-    Xorshift128plus: { source: "./cadence/contracts/Xorshift128plus.cdc" },
-    RandomConsumer: { source: "./cadence/contracts/RandomConsumer.cdc" },
-    RaffleScheduler: { source: "./cadence/contracts/RaffleScheduler.cdc" },
+    DummyPYUSD: {
+      source: "./cadence/contracts/DummyPYUSD.cdc",
+      aliases: { emulator: "f8d6e0586b0a20c7", testnet: "152be59c81feab79" },
+    },
+    DollarHouseRaffle: {
+      source: "./cadence/contracts/DollarHouseRaffle.cdc",
+      aliases: { emulator: "f8d6e0586b0a20c7", testnet: "152be59c81feab79" },
+    },
+    SimpleYieldSource: {
+      source: "./cadence/contracts/SimpleYieldSource.cdc",
+      aliases: { emulator: "f8d6e0586b0a20c7", testnet: "152be59c81feab79" },
+    },
+    Xorshift128plus: {
+      source: "./cadence/contracts/Xorshift128plus.cdc",
+      aliases: { emulator: "f8d6e0586b0a20c7", testnet: "152be59c81feab79" },
+    },
+    RandomConsumer: {
+      source: "./cadence/contracts/RandomConsumer.cdc",
+      aliases: { emulator: "f8d6e0586b0a20c7", testnet: "152be59c81feab79" },
+    },
+    RaffleScheduler: {
+      source: "./cadence/contracts/RaffleScheduler.cdc",
+      aliases: { emulator: "f8d6e0586b0a20c7", testnet: "152be59c81feab79" },
+    },
   },
   dependencies: {
     Burner: {
@@ -85,24 +103,8 @@ const flowJSON = {
     mainnet: "access.mainnet.nodes.onflow.org:9000",
     testnet: "access.devnet.nodes.onflow.org:9000",
   },
-  accounts: {
-    "emulator-account": {
-      address: "f8d6e0586b0a20c7",
-      key: "a30efdca0c2198cc4d4e013f62072fc3013f9f44c4e1a2ebad09f642588168ad",
-    },
-  },
-  deployments: {
-    emulator: {
-      "emulator-account": [
-        "Xorshift128plus",
-        "RandomConsumer",
-        "DummyPYUSD",
-        "SimpleYieldSource",
-        "DollarHouseRaffle",
-        "RaffleScheduler",
-      ],
-    },
-  },
+  accounts: {},
+  deployments: {},
 };
 
 const flowConfig = {

@@ -26,8 +26,69 @@ import {
 
 // ── Lazy FCL accessor ──────────────────────────────────────────────────────
 
+const NETWORK = process.env.NEXT_PUBLIC_FLOW_NETWORK || "testnet";
+const ACCESS_NODE =
+  process.env.NEXT_PUBLIC_FLOW_ACCESS_NODE || "https://rest-testnet.onflow.org";
+const DISCOVERY_WALLET =
+  process.env.NEXT_PUBLIC_FLOW_DISCOVERY_WALLET ||
+  "https://fcl-discovery.onflow.org/testnet/authn";
+
+// Contract addresses per network
+const CONTRACT_ADDRESSES: Record<string, Record<string, string>> = {
+  emulator: {
+    DummyPYUSD: "0xf8d6e0586b0a20c7",
+    DollarHouseRaffle: "0xf8d6e0586b0a20c7",
+    SimpleYieldSource: "0xf8d6e0586b0a20c7",
+    Xorshift128plus: "0xf8d6e0586b0a20c7",
+    RandomConsumer: "0xf8d6e0586b0a20c7",
+    RaffleScheduler: "0xf8d6e0586b0a20c7",
+    FungibleToken: "0xee82856bf20e2aa6",
+    FungibleTokenMetadataViews: "0xee82856bf20e2aa6",
+    MetadataViews: "0xf8d6e0586b0a20c7",
+    ViewResolver: "0xf8d6e0586b0a20c7",
+    Burner: "0xf8d6e0586b0a20c7",
+    RandomBeaconHistory: "0xf8d6e0586b0a20c7",
+    FlowToken: "0x0ae53cb6e3f42a79",
+    FlowTransactionScheduler: "0xf8d6e0586b0a20c7",
+  },
+  testnet: {
+    DummyPYUSD: "0x152be59c81feab79",
+    DollarHouseRaffle: "0x152be59c81feab79",
+    SimpleYieldSource: "0x152be59c81feab79",
+    Xorshift128plus: "0x152be59c81feab79",
+    RandomConsumer: "0x152be59c81feab79",
+    RaffleScheduler: "0x152be59c81feab79",
+    FungibleToken: "0x9a0766d93b6608b7",
+    FungibleTokenMetadataViews: "0x9a0766d93b6608b7",
+    MetadataViews: "0x631e88ae7f1d7c20",
+    ViewResolver: "0x631e88ae7f1d7c20",
+    Burner: "0x9a0766d93b6608b7",
+    RandomBeaconHistory: "0x8c5303eaa26202d6",
+    FlowToken: "0x7e60df042a9c0868",
+    FlowTransactionScheduler: "0x8c5303eaa26202d6",
+  },
+};
+
+let fclConfigured = false;
+
 async function getFcl() {
-  return await import("@onflow/fcl");
+  const fcl = await import("@onflow/fcl");
+  if (!fclConfigured) {
+    fclConfigured = true;
+    const cfg: Record<string, string> = {
+      "app.detail.title": "Dollar House Club",
+      "app.detail.icon": "https://dollarhouseclub.com/favicon.ico",
+      "flow.network": NETWORK,
+      "accessNode.api": ACCESS_NODE,
+      "discovery.wallet": DISCOVERY_WALLET,
+    };
+    const addrs = CONTRACT_ADDRESSES[NETWORK] ?? CONTRACT_ADDRESSES.testnet;
+    for (const [name, addr] of Object.entries(addrs)) {
+      cfg[`0x${name}`] = addr;
+    }
+    fcl.config(cfg);
+  }
+  return fcl;
 }
 
 // ── Lightweight client-only query hook ──────────────────────────────────────
