@@ -21,6 +21,17 @@ All smart contracts are deployed to **Flow Testnet** at account [`0x152be59c81fe
 
 All raffle operations — deposits, withdrawals, winner selection, and prize claims — are executed as on-chain transactions on Flow Testnet. You can verify any transaction on [Flowscan Testnet](https://testnet.flowscan.io).
 
+### Testnet Limitations (Magic Link)
+
+Magic Link wallets on Flow Testnet are created with a very small FLOW balance — not enough to cover transaction fees. Before you can mint demo PYUSD, create raffles, or run any other transaction, you must **fund your Magic Link wallet with testnet FLOW tokens**:
+
+1. Sign in with Magic Link to get your Flow address (shown in your profile)
+2. Go to the [Flow Testnet Faucet](https://faucet.flow.com/fund-account) and paste your address
+3. Fund your account with testnet FLOW
+4. You can now run transactions in the app
+
+This is a testnet-only limitation. On mainnet, wallets would be funded with real FLOW as part of the onboarding flow.
+
 ## Tech Stack
 
 - **Frontend:** Next.js 16, React 19, TypeScript, Tailwind CSS, Framer Motion

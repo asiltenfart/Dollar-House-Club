@@ -132,6 +132,14 @@ function useClientQuery<T>(opts: {
 
 // ── Lightweight client-only mutate helper ───────────────────────────────────
 
+const isEmulator = NETWORK === "emulator";
+
+async function getMagicAuthz() {
+  const { getMagicFlow } = await import("@/lib/magic");
+  const magicFlow = getMagicFlow();
+  return magicFlow.flow.authorization;
+}
+
 function useClientMutate() {
   const [isPending, setIsPending] = useState(false);
 
@@ -144,11 +152,23 @@ function useClientMutate() {
     setIsPending(true);
     try {
       const fcl = await getFcl();
-      const txId = await fcl.mutate({
+
+      // On emulator, FCL uses the dev wallet. On testnet, use Magic Link auth.
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const mutateOpts: any = {
         cadence: opts.cadence,
         args: opts.args,
         limit: opts.limit ?? 1000,
-      });
+      };
+
+      if (!isEmulator) {
+        const authz = await getMagicAuthz();
+        mutateOpts.proposer = authz;
+        mutateOpts.payer = authz;
+        mutateOpts.authorizations = [authz];
+      }
+
+      const txId = await fcl.mutate(mutateOpts);
       await fcl.tx(txId).onceSealed();
       return txId;
     } finally {

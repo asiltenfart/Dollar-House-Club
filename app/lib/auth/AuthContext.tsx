@@ -10,7 +10,7 @@ import React, {
 import type { AuthUser, UserProfile } from "@/types";
 
 // ── Mode detection ──────────────────────────────────────────────────────────
-const FLOW_NETWORK = process.env.NEXT_PUBLIC_FLOW_NETWORK || "emulator";
+const FLOW_NETWORK = process.env.NEXT_PUBLIC_FLOW_NETWORK || "testnet";
 export const isEmulatorMode = FLOW_NETWORK === "emulator";
 
 // ── Context shape ───────────────────────────────────────────────────────────

@@ -110,9 +110,9 @@ const flowJSON = {
 const flowConfig = {
   appDetailTitle: "Dollar House Club",
   appDetailIcon: "https://dollarhouseclub.com/favicon.ico",
-  flowNetwork: (process.env.NEXT_PUBLIC_FLOW_NETWORK || "emulator") as "emulator" | "testnet" | "mainnet",
+  flowNetwork: (process.env.NEXT_PUBLIC_FLOW_NETWORK || "testnet") as "emulator" | "testnet" | "mainnet",
   accessNodeUrl:
-    process.env.NEXT_PUBLIC_FLOW_ACCESS_NODE || "http://localhost:8888",
+    process.env.NEXT_PUBLIC_FLOW_ACCESS_NODE || "https://rest-testnet.onflow.org",
   discoveryWallet:
     process.env.NEXT_PUBLIC_FLOW_DISCOVERY_WALLET ||
     "https://fcl-discovery.onflow.org/testnet/authn",
