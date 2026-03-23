@@ -130,10 +130,10 @@ access(all) contract DollarHouseRaffle {
 
     access(all) resource Deposit {
         access(all) let depositor: Address
-        access(all) var amount: UFix64
+        access(contract) var amount: UFix64
         access(all) let depositedAt: UFix64
-        access(all) var yieldWeight: UFix64
-        access(all) var isWithdrawn: Bool
+        access(contract) var yieldWeight: UFix64
+        access(contract) var isWithdrawn: Bool
 
         init(depositor: Address, amount: UFix64, depositedAt: UFix64, yieldWeight: UFix64) {
             self.depositor = depositor
@@ -177,13 +177,13 @@ access(all) contract DollarHouseRaffle {
         access(all) let targetValue: UFix64
         access(all) let createdAt: UFix64
         access(all) let expiresAt: UFix64
-        access(all) var totalDeposited: UFix64
-        access(all) var totalYield: UFix64
-        access(all) var totalYieldWeight: UFix64
-        access(all) var depositorCount: UInt64
-        access(all) var status: RaffleStatus
-        access(all) var winner: Address?
-        access(all) var prizeClaimed: Bool
+        access(contract) var totalDeposited: UFix64
+        access(contract) var totalYield: UFix64
+        access(contract) var totalYieldWeight: UFix64
+        access(contract) var depositorCount: UInt64
+        access(contract) var status: RaffleStatus
+        access(contract) var winner: Address?
+        access(contract) var prizeClaimed: Bool
         access(contract) let deposits: @{Address: Deposit}
 
         init(
@@ -422,35 +422,33 @@ access(all) contract DollarHouseRaffle {
     /// NOTE: This function is access(all) by design — yield flows from external sources via transactions.
     /// In production, consider restricting to an authorized yield harvester role.
     access(all) fun simulateYield(raffleId: UInt64, yieldVault: @DummyPYUSD.Vault) {
-        let raffle <- self.raffles.remove(key: raffleId) ?? panic("Raffle not found")
-        assert(raffle.status == RaffleStatus.active, message: "Raffle is not active")
+        let raffleRef = &self.raffles[raffleId] as &Raffle?
+            ?? panic("Raffle not found")
+        assert(raffleRef.status == RaffleStatus.active, message: "Raffle is not active")
 
         let amount = yieldVault.balance
         self.vault.deposit(from: <-yieldVault)
-        raffle.addYield(amount)
-        self.raffles[raffleId] <-! raffle
+        raffleRef.addYield(amount)
 
         emit YieldAdded(raffleId: raffleId, amount: amount)
     }
 
     /// STEP 1 of settlement: commit randomness request. Can be called by anyone after expiry.
     access(all) fun commitRaffle(raffleId: UInt64) {
-        // Validate via reference before moving resources
         let raffleRef = &self.raffles[raffleId] as &Raffle?
             ?? panic("Raffle not found")
         assert(raffleRef.status == RaffleStatus.active, message: "Raffle is not active")
         assert(getCurrentBlock().timestamp >= raffleRef.expiresAt, message: "Raffle has not expired yet")
         assert(raffleRef.getDepositorAddresses().length > 0, message: "No depositors in raffle")
 
-        // Effects: move resource, create randomness request, update status
-        let raffle <- self.raffles.remove(key: raffleId)!
+        // Create randomness request and store it
         let request <- self.consumer.requestRandomness()
         let commitBlock = request.block
         let old <- self.pendingRequests[raffleId] <- request
         destroy old
 
-        raffle.setStatus(RaffleStatus.committed)
-        self.raffles[raffleId] <-! raffle
+        // In-place status update via reference (avoids unnecessary remove/insert)
+        raffleRef.setStatus(RaffleStatus.committed)
 
         emit RaffleCommitted(raffleId: raffleId, commitBlock: commitBlock)
     }
@@ -458,21 +456,22 @@ access(all) contract DollarHouseRaffle {
     /// STEP 2 of settlement: reveal the winner using committed randomness.
     /// Must be called in a block after commitRaffle.
     access(all) fun revealWinner(raffleId: UInt64) {
-        let raffle <- self.raffles.remove(key: raffleId) ?? panic("Raffle not found")
-        assert(raffle.status == RaffleStatus.committed, message: "Raffle must be in committed state")
+        let raffleRef = &self.raffles[raffleId] as &Raffle?
+            ?? panic("Raffle not found")
+        assert(raffleRef.status == RaffleStatus.committed, message: "Raffle must be in committed state")
 
         let request <- self.pendingRequests.remove(key: raffleId)
             ?? panic("No pending randomness request for this raffle")
         assert(request.canFullfill(), message: "Randomness not yet available. Try in the next block.")
 
         let randomValue = self.consumer.fulfillRandomRequest(<-request)
-        let winnerAddress = raffle.selectWeightedWinner(randomValue: randomValue)
-        let isFunded = raffle.totalYield >= raffle.targetValue
-        let prizeAmount = isFunded ? raffle.targetValue : raffle.totalYield
+        let winnerAddress = raffleRef.selectWeightedWinner(randomValue: randomValue)
+        let isFunded = raffleRef.totalYield >= raffleRef.targetValue
+        let prizeAmount = isFunded ? raffleRef.targetValue : raffleRef.totalYield
 
-        raffle.setWinner(winnerAddress)
-        raffle.setStatus(isFunded ? RaffleStatus.completedFunded : RaffleStatus.completedUnfunded)
-        self.raffles[raffleId] <-! raffle
+        // In-place mutation via reference (avoids unnecessary remove/insert)
+        raffleRef.setWinner(winnerAddress)
+        raffleRef.setStatus(isFunded ? RaffleStatus.completedFunded : RaffleStatus.completedUnfunded)
 
         emit WinnerRevealed(raffleId: raffleId, winner: winnerAddress, isFunded: isFunded, prizeAmount: prizeAmount)
     }
@@ -510,7 +509,6 @@ access(all) contract DollarHouseRaffle {
     access(all) fun claimPrize(raffleId: UInt64, signer: auth(BorrowValue) &Account): @DummyPYUSD.Vault {
         let winner = signer.address
 
-        // Checks via reference before moving any resources
         let raffleRef = &self.raffles[raffleId] as &Raffle?
             ?? panic("Raffle not found")
         assert(
@@ -520,13 +518,11 @@ access(all) contract DollarHouseRaffle {
         assert(raffleRef.winner == winner, message: "Only the winner can claim the prize")
         assert(!raffleRef.prizeClaimed, message: "Prize has already been claimed")
 
-        // Effects: move resource, mark prize as claimed, return yield
-        let raffle <- self.raffles.remove(key: raffleId)!
-        raffle.markPrizeClaimed()
-        let prizeAmount = raffle.totalYield
+        let prizeAmount = raffleRef.totalYield
         assert(prizeAmount > 0.0, message: "No yield to claim")
 
-        self.raffles[raffleId] <-! raffle
+        // In-place mutation via reference (avoids unnecessary remove/insert)
+        raffleRef.markPrizeClaimed()
 
         emit PrizeClaimed(raffleId: raffleId, winner: winner, amount: prizeAmount)
         return <- self.vault.withdraw(amount: prizeAmount) as! @DummyPYUSD.Vault
