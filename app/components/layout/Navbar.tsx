@@ -45,10 +45,7 @@ export default function Navbar() {
             className="flex items-center gap-2 shrink-0"
             aria-label="Dollar House Club home"
           >
-            <Image src="/logo.png" alt="Dollar House Club" width={32} height={32} className="w-8 h-8 rounded-[8px]" />
-            <span className="text-base font-bold text-[#222222] hidden sm:block" style={{ letterSpacing: "-0.01em" }}>
-              Dollar House Club
-            </span>
+            <Image src="/logo.png" alt="Dollar House Club" width={64} height={64} className="w-16 h-16 rounded-[8px]" />
           </Link>
 
           {/* Center nav links — desktop */}
@@ -66,7 +63,7 @@ export default function Navbar() {
               <div className="flex items-center gap-3">
                 <div className="hidden md:flex items-center gap-2">
                   <DemoFaucet />
-                  <DevCreateRaffle />
+                  {/* <DevCreateRaffle /> */}
                 </div>
                 <Link
                   href={`/profile/${user.profile.address}/create`}
