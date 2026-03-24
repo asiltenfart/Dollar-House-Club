@@ -28,7 +28,7 @@ export default function HomePage() {
             <HowItWorksStep
               number={1}
               title="Deposit stablecoins"
-              description="Choose any active property raffle and deposit PYUSD. Your principal is safe and fully withdrawable at any time, no questions asked."
+              description="Choose any active property raffle and deposit PYUSD. Your principal is safe and fully withdrawable at any time."
               icon={
                 <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
                   <circle cx="14" cy="14" r="13" stroke="#FF385C" strokeWidth="1.5" />
