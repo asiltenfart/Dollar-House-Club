@@ -118,28 +118,30 @@ export default function HeroSection({ raffles }: HeroSectionProps) {
           )}
         </div>
 
-        {/* Pagination dots */}
-        <div className="flex items-center justify-center gap-2 mt-10">
-          <span className="text-[#B0B0B0] select-none cursor-pointer hover:text-[#222]">&#8249;</span>
-          {[1, 2, 3].map((n) => (
-            <span
-              key={n}
-              className="flex items-center justify-center rounded-full cursor-pointer select-none"
-              style={{
-                width: 28,
-                height: 28,
-                fontSize: 13,
-                fontWeight: 600,
-                background: n === 1 ? "#1A1A1A" : "transparent",
-                color: n === 1 ? "#fff" : "#717171",
-                border: n === 1 ? "none" : "1px solid #DDDDDD",
-              }}
-            >
-              {n}
-            </span>
-          ))}
-          <span className="text-[#B0B0B0] select-none cursor-pointer hover:text-[#222]">&#8250;</span>
-        </div>
+        {/* Pagination dots — only show when there are multiple pages */}
+        {raffles.length > 5 && (
+          <div className="flex items-center justify-center gap-2 mt-10">
+            <span className="text-[#B0B0B0] select-none cursor-pointer hover:text-[#222]">&#8249;</span>
+            {[1, 2, 3].map((n) => (
+              <span
+                key={n}
+                className="flex items-center justify-center rounded-full cursor-pointer select-none"
+                style={{
+                  width: 28,
+                  height: 28,
+                  fontSize: 13,
+                  fontWeight: 600,
+                  background: n === 1 ? "#1A1A1A" : "transparent",
+                  color: n === 1 ? "#fff" : "#717171",
+                  border: n === 1 ? "none" : "1px solid #DDDDDD",
+                }}
+              >
+                {n}
+              </span>
+            ))}
+            <span className="text-[#B0B0B0] select-none cursor-pointer hover:text-[#222]">&#8250;</span>
+          </div>
+        )}
       </div>
     </section>
   );
