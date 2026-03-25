@@ -1,20 +1,27 @@
 import type { Raffle, RaffleStatus, UserProfile, PropertyListing } from "@/types";
 
-// Placeholder images for on-chain raffles (no images stored on-chain)
-const PLACEHOLDER_IMAGES = [
-  "/house 1/image.png",
-  "/house 1/living room.png",
-  "/house 1/kitchen.png",
-  "/house 1/bedroom.png",
-];
-
 // ── Types matching what FCL returns from Cadence structs ─────────────────────
+
+export interface ChainPropertyMetadata {
+  yearBuilt: string;
+  bedrooms: string;
+  bathrooms: string;
+  squareFootage: string;
+  street: string;
+  city: string;
+  stateProvince: string;
+  country: string;
+  postalCode: string;
+  propertyValue: string;
+  imageURLs: string[];
+}
 
 export interface ChainRaffleData {
   id: string;
   seller: string;
   title: string;
   description: string;
+  metadata: ChainPropertyMetadata;
   targetValue: string;
   createdAt: string;
   expiresAt: string;
@@ -67,26 +74,26 @@ function makeWinnerProfile(address: string): UserProfile {
   };
 }
 
-function makePropertyListing(title: string, description: string): PropertyListing {
+function makePropertyListing(title: string, description: string, meta: ChainPropertyMetadata): PropertyListing {
   return {
-    title: title || "Modern Bungalow with Attached Garage",
-    description: description || "Bright and modern bungalow with open-concept kitchen, white shaker cabinetry, marble countertops, center island, fenced backyard, and renovated full bathroom with dual vanity.",
+    title: title || "Untitled Property",
+    description: description || "",
     propertyType: "house",
-    bedrooms: 3,
-    bathrooms: 2,
-    squareFootage: 1350,
+    bedrooms: parseInt(meta.bedrooms, 10) || 0,
+    bathrooms: parseInt(meta.bathrooms, 10) || 0,
+    squareFootage: parseInt(meta.squareFootage, 10) || 0,
     location: {
-      street: "47 Meadowbrook Drive",
-      city: "Barrie",
-      stateProvince: "Ontario",
-      country: "Canada",
-      postalCode: "L4N 7T2",
+      street: meta.street || "",
+      city: meta.city || "",
+      stateProvince: meta.stateProvince || "",
+      country: meta.country || "",
+      postalCode: meta.postalCode || "",
       lat: null,
       lng: null,
     },
-    yearBuilt: 2021,
-    images: PLACEHOLDER_IMAGES,
-    proofOfOwnership: "",
+    yearBuilt: parseInt(meta.yearBuilt, 10) || 0,
+    images: meta.imageURLs || [],
+    propertyValue: parseFloat(meta.propertyValue) || 0,
   };
 }
 
@@ -101,7 +108,7 @@ export function chainRaffleToFrontend(data: ChainRaffleData): Raffle {
   return {
     id: data.id,
     seller: makeSellerProfile(data.seller),
-    property: makePropertyListing(data.title, data.description),
+    property: makePropertyListing(data.title, data.description, data.metadata),
     targetValueUSD: targetValue,
     totalDeposited,
     totalYieldEarned: totalYield,

@@ -33,7 +33,7 @@ export interface PropertyListing {
   location: PropertyLocation;
   yearBuilt: number;
   images: string[];
-  proofOfOwnership: string;
+  propertyValue: number;
 }
 
 export interface PropertyLocation {
@@ -95,7 +95,6 @@ export interface CreateRaffleFormData {
   property: Partial<PropertyListing>;
   targetValueUSD: number | null;
   images: File[];
-  proofOfOwnership: File | null;
   agreedToTerms: boolean;
   isSubmitting: boolean;
   errors: Record<string, string>;

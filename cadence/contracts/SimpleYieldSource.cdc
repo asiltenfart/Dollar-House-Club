@@ -19,7 +19,7 @@ access(all) contract SimpleYieldSource {
 
     // ── State ────────────────────────────────────────────────────────────────
 
-    /// Annual yield rate: 5.0 = 500% APY
+    /// Annual yield rate: 0.05 = 5% APY
     access(all) let annualRate: UFix64
 
     /// Seconds in a year (365 days)
@@ -162,7 +162,7 @@ access(all) contract SimpleYieldSource {
 
     init() {
         self.pools = {}
-        self.annualRate = 5.0        // 500% APY
+        self.annualRate = 0.05       // 5% APY
         self.secondsPerYear = 31536000.0
     }
 }

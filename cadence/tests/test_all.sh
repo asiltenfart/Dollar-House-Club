@@ -98,6 +98,13 @@ TEST_ADDR="0x179b6b1cb6755e31"
 # Public key derived from test-account private key in flow.json
 TEST_PUBKEY="1f72cd1a0f64d172ac7c94fcb63cc3733e8e8152a8dfbc1373f9b18198fce5f6ccac8a27d66dbe0b7cf6db06dd2042c1527d8610f8905c79d7fb60dc34d4b2f1"
 
+# ── Metadata arguments for create_raffle transactions ────────────────────────
+# These follow title, description, targetValue in the transaction signature:
+#   yearBuilt, bedrooms, bathrooms, squareFootage,
+#   street, city, stateProvince, country, postalCode,
+#   propertyValue, imageURLs
+META_ARGS='2021 3 2 1350 "47 Meadowbrook Drive" "Barrie" "Ontario" "Canada" "L4N 7T2" 625000.0 ["https://example.com/img1.jpg","https://example.com/img2.jpg"]'
+
 echo ""
 echo -e "${YELLOW}═══ Dollar House Club — Integration Tests ═══${NC}"
 echo ""
@@ -147,19 +154,25 @@ echo ""
 # ── 3. createRaffle tests ───────────────────────────────────────────────────
 echo -e "${YELLOW}createRaffle Tests${NC}"
 
-assert_success "Create raffle #1 with valid params" \
+assert_success "Create raffle #1 with valid params and metadata" \
     $FLOW transactions send cadence/transactions/create_raffle.cdc \
     "Test House" "A beautiful test house" 50000.0 \
+    2021 3 2 1350 "47 Meadowbrook Drive" "Barrie" "Ontario" "Canada" "L4N 7T2" \
+    625000.0 '["https://example.com/img1.jpg","https://example.com/img2.jpg"]' \
     --signer "$EMULATOR_ACCOUNT" -n emulator
 
 assert_fail "Create raffle with target < 1000 should fail" \
     $FLOW transactions send cadence/transactions/create_raffle.cdc \
     "Cheap House" "Too cheap" 500.0 \
+    2021 3 2 1350 "1 Main St" "City" "State" "Country" "00000" \
+    500.0 '[]' \
     --signer "$EMULATOR_ACCOUNT" -n emulator
 
 assert_fail "Create raffle with empty title should fail" \
     $FLOW transactions send cadence/transactions/create_raffle.cdc \
     "" "No title" 5000.0 \
+    2021 3 2 1350 "1 Main St" "City" "State" "Country" "00000" \
+    5000.0 '[]' \
     --signer "$EMULATOR_ACCOUNT" -n emulator
 
 assert_output_contains "Raffle #1 exists on chain" "Result" \
@@ -171,6 +184,22 @@ assert_output_contains "Raffle #1 seller is emulator-account" "$EMULATOR_ADDR" \
 
 # Verify raffle status is active (rawValue 0)
 assert_output_contains "Raffle #1 status is active" "rawValue: 0" \
+    $FLOW scripts execute cadence/scripts/get_raffle.cdc 1 -n emulator
+
+# Verify metadata is stored on-chain
+assert_output_contains "Raffle #1 has metadata with bedrooms" "bedrooms" \
+    $FLOW scripts execute cadence/scripts/get_raffle.cdc 1 -n emulator
+
+assert_output_contains "Raffle #1 metadata has city" "Barrie" \
+    $FLOW scripts execute cadence/scripts/get_raffle.cdc 1 -n emulator
+
+assert_output_contains "Raffle #1 metadata has street" "Meadowbrook" \
+    $FLOW scripts execute cadence/scripts/get_raffle.cdc 1 -n emulator
+
+assert_output_contains "Raffle #1 metadata has imageURLs" "imageURLs" \
+    $FLOW scripts execute cadence/scripts/get_raffle.cdc 1 -n emulator
+
+assert_output_contains "Raffle #1 metadata has propertyValue" "propertyValue" \
     $FLOW scripts execute cadence/scripts/get_raffle.cdc 1 -n emulator
 
 echo ""
@@ -244,6 +273,8 @@ echo -e "${YELLOW}withdraw Tests${NC}"
 assert_success "Create raffle #2 for withdrawal test" \
     $FLOW transactions send cadence/transactions/create_raffle.cdc \
     "Withdraw Test House" "For testing withdrawal" 50000.0 \
+    2020 4 3 2100 "99 Oak Lane" "Toronto" "Ontario" "Canada" "M5V 2H1" \
+    750000.0 '["https://example.com/img3.jpg"]' \
     --signer "$EMULATOR_ACCOUNT" -n emulator
 
 assert_success "Deposit \$200 to raffle #2" \
@@ -315,6 +346,16 @@ assert_output_contains "RaffleView includes prizeClaimed" "prizeClaimed" \
 # Verify depositorCount reflects unique depositors (never decrements)
 assert_output_contains "depositorCount is at least 1" "depositorCount" \
     $FLOW scripts execute cadence/scripts/get_raffle.cdc 2 -n emulator
+
+# Verify metadata fields are present in RaffleView
+assert_output_contains "RaffleView includes metadata struct" "metadata" \
+    $FLOW scripts execute cadence/scripts/get_raffle.cdc 1 -n emulator
+
+assert_output_contains "Metadata includes yearBuilt" "yearBuilt" \
+    $FLOW scripts execute cadence/scripts/get_raffle.cdc 1 -n emulator
+
+assert_output_contains "Metadata includes squareFootage" "squareFootage" \
+    $FLOW scripts execute cadence/scripts/get_raffle.cdc 1 -n emulator
 
 # Verify get_user_deposited_raffle_ids script
 assert_output_contains "Get user deposited raffle IDs" "Result" \
@@ -391,6 +432,8 @@ assert_fail "Double-scheduling raffle #1 should fail" \
 assert_success "Create raffle #3 (auto-scheduled)" \
     $FLOW transactions send cadence/transactions/create_raffle.cdc \
     "Scheduler Test House" "Testing auto-scheduling" 50000.0 \
+    2019 2 1 900 "10 Pine Ave" "Vancouver" "BC" "Canada" "V6B 1A1" \
+    400000.0 '[]' \
     --signer "$EMULATOR_ACCOUNT" -n emulator
 
 assert_output_contains "Raffle #3 is auto-scheduled" "true" \
@@ -410,12 +453,16 @@ assert_success "Set raffle duration to 60 seconds" \
 assert_success "Create raffle #4 (short duration, no auto-schedule)" \
     $FLOW transactions send cadence/transactions/create_raffle_no_schedule.cdc \
     "Settlement Test House" "Testing full lifecycle" 50000.0 \
+    2022 3 2 1500 "25 Elm Street" "Ottawa" "Ontario" "Canada" "K1A 0B1" \
+    550000.0 '["https://example.com/settlement.jpg"]' \
     --signer "$EMULATOR_ACCOUNT" -n emulator
 
 # Create raffle #5 WITHOUT deposits (for testing commit with no depositors)
 assert_success "Create raffle #5 (short duration, no deposits)" \
     $FLOW transactions send cadence/transactions/create_raffle_no_schedule.cdc \
     "Empty Raffle" "No depositors" 50000.0 \
+    2015 1 1 500 "1 Empty Rd" "Nowhere" "AB" "Canada" "T0A 0A0" \
+    100000.0 '[]' \
     --signer "$EMULATOR_ACCOUNT" -n emulator
 
 # Deposit from test-account to raffle #4

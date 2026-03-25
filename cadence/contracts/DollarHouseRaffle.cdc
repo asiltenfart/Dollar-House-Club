@@ -65,6 +65,42 @@ access(all) contract DollarHouseRaffle {
         access(all) case completedUnfunded
     }
 
+    // ── Property Metadata (stored on-chain) ──────────────────────────────────
+
+    access(all) struct PropertyMetadata {
+        access(all) let yearBuilt: UInt16
+        access(all) let bedrooms: UInt8
+        access(all) let bathrooms: UInt8
+        access(all) let squareFootage: UInt32
+        access(all) let street: String
+        access(all) let city: String
+        access(all) let stateProvince: String
+        access(all) let country: String
+        access(all) let postalCode: String
+        access(all) let propertyValue: UFix64
+        /// Image URLs (IPFS CIDs like "ipfs://Qm..." or HTTPS URLs)
+        access(all) let imageURLs: [String]
+
+        view init(
+            yearBuilt: UInt16, bedrooms: UInt8, bathrooms: UInt8,
+            squareFootage: UInt32, street: String, city: String,
+            stateProvince: String, country: String, postalCode: String,
+            propertyValue: UFix64, imageURLs: [String]
+        ) {
+            self.yearBuilt = yearBuilt
+            self.bedrooms = bedrooms
+            self.bathrooms = bathrooms
+            self.squareFootage = squareFootage
+            self.street = street
+            self.city = city
+            self.stateProvince = stateProvince
+            self.country = country
+            self.postalCode = postalCode
+            self.propertyValue = propertyValue
+            self.imageURLs = imageURLs
+        }
+    }
+
     // ── View Structs (returned by scripts) ───────────────────────────────────
 
     access(all) struct RaffleView {
@@ -72,6 +108,7 @@ access(all) contract DollarHouseRaffle {
         access(all) let seller: Address
         access(all) let title: String
         access(all) let description: String
+        access(all) let metadata: PropertyMetadata
         access(all) let targetValue: UFix64
         access(all) let createdAt: UFix64
         access(all) let expiresAt: UFix64
@@ -85,7 +122,8 @@ access(all) contract DollarHouseRaffle {
 
         view init(
             id: UInt64, seller: Address, title: String, description: String,
-            targetValue: UFix64, createdAt: UFix64, expiresAt: UFix64,
+            metadata: PropertyMetadata, targetValue: UFix64,
+            createdAt: UFix64, expiresAt: UFix64,
             totalDeposited: UFix64, totalYield: UFix64, totalYieldWeight: UFix64,
             depositorCount: UInt64, status: RaffleStatus, winner: Address?,
             prizeClaimed: Bool
@@ -94,6 +132,7 @@ access(all) contract DollarHouseRaffle {
             self.seller = seller
             self.title = title
             self.description = description
+            self.metadata = metadata
             self.targetValue = targetValue
             self.createdAt = createdAt
             self.expiresAt = expiresAt
@@ -174,6 +213,7 @@ access(all) contract DollarHouseRaffle {
         access(all) let seller: Address
         access(all) let title: String
         access(all) let description: String
+        access(all) let metadata: PropertyMetadata
         access(all) let targetValue: UFix64
         access(all) let createdAt: UFix64
         access(all) let expiresAt: UFix64
@@ -188,12 +228,14 @@ access(all) contract DollarHouseRaffle {
 
         init(
             id: UInt64, seller: Address, title: String, description: String,
-            targetValue: UFix64, createdAt: UFix64, expiresAt: UFix64
+            metadata: PropertyMetadata, targetValue: UFix64,
+            createdAt: UFix64, expiresAt: UFix64
         ) {
             self.id = id
             self.seller = seller
             self.title = title
             self.description = description
+            self.metadata = metadata
             self.targetValue = targetValue
             self.createdAt = createdAt
             self.expiresAt = expiresAt
@@ -282,7 +324,8 @@ access(all) contract DollarHouseRaffle {
         access(all) view fun toView(): RaffleView {
             return RaffleView(
                 id: self.id, seller: self.seller, title: self.title,
-                description: self.description, targetValue: self.targetValue,
+                description: self.description, metadata: self.metadata,
+                targetValue: self.targetValue,
                 createdAt: self.createdAt, expiresAt: self.expiresAt,
                 totalDeposited: self.totalDeposited, totalYield: self.totalYield,
                 totalYieldWeight: self.totalYieldWeight,
@@ -317,7 +360,8 @@ access(all) contract DollarHouseRaffle {
 
     /// Create a new raffle. Requires authorized account to prevent seller impersonation.
     access(all) fun createRaffle(
-        signer: auth(BorrowValue) &Account, title: String, description: String, targetValue: UFix64
+        signer: auth(BorrowValue) &Account, title: String, description: String,
+        metadata: PropertyMetadata, targetValue: UFix64
     ): UInt64 {
         pre {
             targetValue >= DollarHouseRaffle.minTargetValue: "Target value must be at least $1,000"
@@ -331,7 +375,8 @@ access(all) contract DollarHouseRaffle {
 
         let raffle <- create Raffle(
             id: raffleId, seller: seller, title: title,
-            description: description, targetValue: targetValue,
+            description: description, metadata: metadata,
+            targetValue: targetValue,
             createdAt: now, expiresAt: now + self.raffleDuration
         )
 
