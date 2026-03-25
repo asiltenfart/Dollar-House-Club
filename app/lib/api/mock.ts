@@ -49,17 +49,14 @@ export const MOCK_USERS: UserProfile[] = [
   },
 ];
 
-// ============ PROPERTY IMAGES (Unsplash) ============
+// ============ PROPERTY IMAGES (local) ============
 
 const HOUSE_IMAGES = [
-  "https://images.unsplash.com/photo-1568605114967-8130f3a36994?w=800&q=80",
-  "https://images.unsplash.com/photo-1570129477492-45c003edd2be?w=800&q=80",
-  "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=800&q=80",
-  "https://images.unsplash.com/photo-1512917774080-9991f1c4c750?w=800&q=80",
-  "https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?w=800&q=80",
-  "https://images.unsplash.com/photo-1605146769289-440113cc3d00?w=800&q=80",
-  "https://images.unsplash.com/photo-1583608205776-bfd35f0d9f83?w=800&q=80",
-  "https://images.unsplash.com/photo-1480074568708-e7b720bb3f09?w=800&q=80",
+  "/house 1/image.png",
+  "/house 1/living room.png",
+  "/house 1/kitchen.png",
+  "/house 1/bedroom.png",
+  "/house 1/bathroom.png",
 ];
 
 // ============ MOCK RAFFLES ============
@@ -86,7 +83,7 @@ export const MOCK_RAFFLES: Raffle[] = [
         lng: -86.7481,
       },
       yearBuilt: 1924,
-      images: [HOUSE_IMAGES[0], HOUSE_IMAGES[1], HOUSE_IMAGES[2], HOUSE_IMAGES[3]],
+      images: [HOUSE_IMAGES[0], HOUSE_IMAGES[1], HOUSE_IMAGES[2], HOUSE_IMAGES[3], HOUSE_IMAGES[4]],
       proofOfOwnership: "https://example.com/docs/deed-001.pdf",
     },
     targetValueUSD: 420000,
@@ -124,7 +121,7 @@ export const MOCK_RAFFLES: Raffle[] = [
         lng: -80.1286,
       },
       yearBuilt: 2018,
-      images: [HOUSE_IMAGES[4], HOUSE_IMAGES[5], HOUSE_IMAGES[6]],
+      images: [HOUSE_IMAGES[0], HOUSE_IMAGES[1], HOUSE_IMAGES[2]],
       proofOfOwnership: "https://example.com/docs/deed-002.pdf",
     },
     targetValueUSD: 680000,
@@ -162,7 +159,7 @@ export const MOCK_RAFFLES: Raffle[] = [
         lng: -71.2295,
       },
       yearBuilt: 1987,
-      images: [HOUSE_IMAGES[7], HOUSE_IMAGES[0], HOUSE_IMAGES[2]],
+      images: [HOUSE_IMAGES[3], HOUSE_IMAGES[0], HOUSE_IMAGES[2]],
       proofOfOwnership: "https://example.com/docs/deed-003.pdf",
     },
     targetValueUSD: 1100000,
@@ -200,7 +197,7 @@ export const MOCK_RAFFLES: Raffle[] = [
         lng: -104.9796,
       },
       yearBuilt: 2022,
-      images: [HOUSE_IMAGES[3], HOUSE_IMAGES[5], HOUSE_IMAGES[7]],
+      images: [HOUSE_IMAGES[3], HOUSE_IMAGES[1], HOUSE_IMAGES[4]],
       proofOfOwnership: "https://example.com/docs/deed-004.pdf",
     },
     targetValueUSD: 575000,
@@ -238,7 +235,7 @@ export const MOCK_RAFFLES: Raffle[] = [
         lng: -90.0485,
       },
       yearBuilt: 1892,
-      images: [HOUSE_IMAGES[6], HOUSE_IMAGES[1], HOUSE_IMAGES[4]],
+      images: [HOUSE_IMAGES[2], HOUSE_IMAGES[1], HOUSE_IMAGES[0]],
       proofOfOwnership: "https://example.com/docs/deed-005.pdf",
     },
     targetValueUSD: 280000,
@@ -276,7 +273,7 @@ export const MOCK_RAFFLES: Raffle[] = [
         lng: -120.1833,
       },
       yearBuilt: 1978,
-      images: [HOUSE_IMAGES[2], HOUSE_IMAGES[0], HOUSE_IMAGES[7]],
+      images: [HOUSE_IMAGES[2], HOUSE_IMAGES[0], HOUSE_IMAGES[4]],
       proofOfOwnership: "https://example.com/docs/deed-006.pdf",
     },
     targetValueUSD: 890000,

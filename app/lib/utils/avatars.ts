@@ -17,47 +17,24 @@ const AVATARS = [
   `data:image/svg+xml,${encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" width="200" height="200" viewBox="0 0 200 200"><circle cx="100" cy="100" r="100" fill="#FFB347"/><polygon points="60,76 80,76 70,92" fill="#fff"/><polygon points="120,76 140,76 130,92" fill="#fff"/><circle cx="70" cy="82" r="5" fill="#2D2D2D"/><circle cx="130" cy="82" r="5" fill="#2D2D2D"/><path d="M80 126 Q100 140 120 126" stroke="#fff" stroke-width="5" stroke-linecap="round" fill="none"/><line x1="56" y1="68" x2="84" y2="68" stroke="#E89A30" stroke-width="5" stroke-linecap="round"/><line x1="116" y1="68" x2="144" y2="68" stroke="#E89A30" stroke-width="5" stroke-linecap="round"/></svg>`)}`,
 ] as const;
 
-const STORAGE_KEY = "dhc_avatar_assignments";
-
-type AvatarMap = Record<string, number>;
-
-function getMap(): AvatarMap {
-  if (typeof window === "undefined") return {};
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    return raw ? (JSON.parse(raw) as AvatarMap) : {};
-  } catch {
-    return {};
+/**
+ * Simple deterministic hash so the same address always maps to the same avatar,
+ * identically on server and client (no localStorage, no Math.random).
+ */
+function hashCode(str: string): number {
+  let hash = 0;
+  for (let i = 0; i < str.length; i++) {
+    hash = (hash * 31 + str.charCodeAt(i)) | 0;
   }
-}
-
-function saveMap(map: AvatarMap) {
-  try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(map));
-  } catch {
-    // localStorage unavailable — silent fail
-  }
+  return Math.abs(hash);
 }
 
 /**
- * Get a persistent avatar data URI for a given user key (address or email).
- * Randomly assigns one on first call, then persists via localStorage.
+ * Get a deterministic avatar data URI for a given user key (address or email).
  */
 export function getAvatar(userKey: string): string {
   if (!userKey) return AVATARS[0];
-
-  const map = getMap();
-
-  if (userKey in map) {
-    return AVATARS[map[userKey]];
-  }
-
-  // Assign a random avatar and persist
-  const index = Math.floor(Math.random() * AVATARS.length);
-  map[userKey] = index;
-  saveMap(map);
-
-  return AVATARS[index];
+  return AVATARS[hashCode(userKey) % AVATARS.length];
 }
 
 /** All avatar options (for a future picker UI). */

@@ -2,10 +2,10 @@ import type { Raffle, RaffleStatus, UserProfile, PropertyListing } from "@/types
 
 // Placeholder images for on-chain raffles (no images stored on-chain)
 const PLACEHOLDER_IMAGES = [
-  "https://images.unsplash.com/photo-1568605114967-8130f3a36994?w=800&q=80",
-  "https://images.unsplash.com/photo-1570129477492-45c003edd2be?w=800&q=80",
-  "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=800&q=80",
-  "https://images.unsplash.com/photo-1512917774080-9991f1c4c750?w=800&q=80",
+  "/house 1/image.png",
+  "/house 1/living room.png",
+  "/house 1/kitchen.png",
+  "/house 1/bedroom.png",
 ];
 
 // ── Types matching what FCL returns from Cadence structs ─────────────────────
@@ -67,24 +67,24 @@ function makeWinnerProfile(address: string): UserProfile {
   };
 }
 
-function makePropertyListing(title: string, description: string, targetValue: number): PropertyListing {
+function makePropertyListing(title: string, description: string): PropertyListing {
   return {
-    title,
-    description,
+    title: title || "Modern Bungalow with Attached Garage",
+    description: description || "Bright and modern bungalow with open-concept kitchen, white shaker cabinetry, marble countertops, center island, fenced backyard, and renovated full bathroom with dual vanity.",
     propertyType: "house",
-    bedrooms: 0,
-    bathrooms: 0,
-    squareFootage: 0,
+    bedrooms: 3,
+    bathrooms: 2,
+    squareFootage: 1350,
     location: {
-      street: "",
-      city: "On-Chain",
-      stateProvince: "Flow",
-      country: "Blockchain",
-      postalCode: "",
+      street: "47 Meadowbrook Drive",
+      city: "Barrie",
+      stateProvince: "Ontario",
+      country: "Canada",
+      postalCode: "L4N 7T2",
       lat: null,
       lng: null,
     },
-    yearBuilt: 0,
+    yearBuilt: 2021,
     images: PLACEHOLDER_IMAGES,
     proofOfOwnership: "",
   };
@@ -101,7 +101,7 @@ export function chainRaffleToFrontend(data: ChainRaffleData): Raffle {
   return {
     id: data.id,
     seller: makeSellerProfile(data.seller),
-    property: makePropertyListing(data.title, data.description, targetValue),
+    property: makePropertyListing(data.title, data.description),
     targetValueUSD: targetValue,
     totalDeposited,
     totalYieldEarned: totalYield,
