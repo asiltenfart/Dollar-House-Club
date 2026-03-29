@@ -74,26 +74,27 @@ function makeWinnerProfile(address: string): UserProfile {
   };
 }
 
-function makePropertyListing(title: string, description: string, meta: ChainPropertyMetadata): PropertyListing {
+function makePropertyListing(title: string, description: string, meta: ChainPropertyMetadata | undefined | null): PropertyListing {
+  const m = meta ?? ({} as Partial<ChainPropertyMetadata>);
   return {
     title: title || "Untitled Property",
     description: description || "",
     propertyType: "house",
-    bedrooms: parseInt(meta.bedrooms, 10) || 0,
-    bathrooms: parseInt(meta.bathrooms, 10) || 0,
-    squareFootage: parseInt(meta.squareFootage, 10) || 0,
+    bedrooms: parseInt(m.bedrooms ?? "", 10) || 0,
+    bathrooms: parseInt(m.bathrooms ?? "", 10) || 0,
+    squareFootage: parseInt(m.squareFootage ?? "", 10) || 0,
     location: {
-      street: meta.street || "",
-      city: meta.city || "",
-      stateProvince: meta.stateProvince || "",
-      country: meta.country || "",
-      postalCode: meta.postalCode || "",
+      street: m.street || "",
+      city: m.city || "",
+      stateProvince: m.stateProvince || "",
+      country: m.country || "",
+      postalCode: m.postalCode || "",
       lat: null,
       lng: null,
     },
-    yearBuilt: parseInt(meta.yearBuilt, 10) || 0,
-    images: meta.imageURLs || [],
-    propertyValue: parseFloat(meta.propertyValue) || 0,
+    yearBuilt: parseInt(m.yearBuilt ?? "", 10) || 0,
+    images: m.imageURLs || [],
+    propertyValue: parseFloat(m.propertyValue ?? "") || 0,
   };
 }
 

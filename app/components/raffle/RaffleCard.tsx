@@ -48,32 +48,34 @@ export default function RaffleCard({ raffle, isDeposited }: RaffleCardProps) {
       {/* Image */}
       <div className="relative w-full overflow-hidden" style={{ aspectRatio: "4/3" }}>
         {/* Fallback placeholder */}
-        {!imageLoaded && (
+        {(!cover || !imageLoaded) && (
           <div className="absolute inset-0 bg-[#F7F7F7] flex items-center justify-center">
             <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
               <path d="M24 8L40 22V40H32V28H16V40H8V22L24 8Z" fill="#DDDDDD" />
             </svg>
           </div>
         )}
-        <Image
-          src={cover}
-          alt={raffle.property.title}
-          fill
-          className="object-cover"
-          style={{
-            opacity: imageLoaded ? 1 : 0,
-            transition: "opacity 300ms ease, transform 200ms ease-out",
-            transform: "scale(1)",
-          }}
-          onLoad={() => setImageLoaded(true)}
-          onMouseEnter={(e) => {
-            (e.currentTarget as HTMLElement).style.transform = "scale(1.03)";
-          }}
-          onMouseLeave={(e) => {
-            (e.currentTarget as HTMLElement).style.transform = "scale(1)";
-          }}
-          sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 33vw"
-        />
+        {cover && (
+          <Image
+            src={cover}
+            alt={raffle.property.title}
+            fill
+            className="object-cover"
+            style={{
+              opacity: imageLoaded ? 1 : 0,
+              transition: "opacity 300ms ease, transform 200ms ease-out",
+              transform: "scale(1)",
+            }}
+            onLoad={() => setImageLoaded(true)}
+            onMouseEnter={(e) => {
+              (e.currentTarget as HTMLElement).style.transform = "scale(1.03)";
+            }}
+            onMouseLeave={(e) => {
+              (e.currentTarget as HTMLElement).style.transform = "scale(1)";
+            }}
+            sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 33vw"
+          />
+        )}
 
         {/* Status badge — top left */}
         <div className="absolute top-3 left-3">
